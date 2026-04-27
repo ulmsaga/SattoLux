@@ -74,7 +74,7 @@ com.saga.sattolux
 # application.yml 예시
 spring:
   datasource:
-    url: ${DB_URL}           # jdbc:mysql://host:3306/SATTOLUX_DEV_DB or SATTOLUX_DB
+    url: ${DB_URL}           # jdbc:mysql://host:13306/SATTOLUX_DEV_DB or SATTOLUX_DB
     username: ${DB_USER}     # sattolux
     password: ${DB_PASSWORD} # 환경변수로만 주입 — 파일 기재 금지
 ai:
@@ -84,7 +84,7 @@ ai:
 
 ```bash
 # 개발 시 쉘에서 주입 (파일 저장 X)
-export DB_URL=jdbc:mysql://서버IP:3306/SATTOLUX_DEV_DB
+export DB_URL=jdbc:mysql://서버IP:13306/SATTOLUX_DEV_DB
 export DB_USER=sattolux
 export DB_PASSWORD=****
 ```
@@ -98,23 +98,25 @@ export DB_PASSWORD=****
 
 ---
 
-## AI 연동 스킬
+## LLM 연동 스킬
 
 ### 구조
-- AI 제공자를 인터페이스로 추상화 → Claude / ChatGPT 전환 가능
+- 번호 생성 전략과 실행 엔진을 분리
 - `core.ai` 패키지에 구현
 
 ```
 core.ai
-├── AiNumberGenerator       # 인터페이스
-└── OpenAiNumberGenerator   # OpenAI GPT-4o 구현체
+├── NumberGeneratorEngine   # 인터페이스
+├── LocalNumberGenerator    # LOCAL 구현체
+└── ClaudeNumberGenerator   # CLAUDE 구현체
 ```
 
 ### 호출 흐름
-1. `lotto_result`에서 최근 N회 당첨 번호 조회
-2. AI API 호출 (프롬프트 + 데이터)
-3. 응답 파싱 → 번호 유효성 검증 (1~45, 중복 없음, 6개)
-4. 실패 시 완전 랜덤으로 fallback
+1. `satto_draw_result`에서 최근 N회 당첨 번호 조회
+2. rule별 `method_code`, `generator_code`를 해석
+3. `LOCAL`은 서버 내부 생성, `CLAUDE`는 규칙 묶음 + 통계로 API 호출
+4. 응답 파싱 → 번호 유효성 검증 (1~45, 중복 없음, 6개)
+5. 실패 시 완전 랜덤으로 fallback
 
 ---
 
@@ -144,6 +146,20 @@ core.ai
 ---
 
 ## 공통 스킬
+
+### 문서 운영 규칙
+- 작업 완료 시 `.claude/todo.md`를 즉시 업데이트한다.
+- 완료된 작업은 체크하고, 롤백되었거나 방향이 바뀌어 미완료 상태가 되면 언체크한다.
+- 설계 방향이 달라졌거나 중요한 판단이 생기면 관련 Markdown에 바로 반영한다.
+- 반복 실행이 필요한 스크립트, 기준 파일, 운영에 필요한 참고 경로가 추가되면 다시 찾기 쉽게 Markdown에 남긴다.
+
+### 버그/오류 기록 규칙
+- 개발 중 버그나 오류를 발견하면 **수정 즉시** `.claude/bugs.md`에 기록한다.
+- 형식: 발생일 / 심각도 / 증상 / 원인 / 수정 내용 / 관련 파일
+- 심각도 기준: `High` (기능 불가) / `Medium` (동작 이상) / `Low` (UX 문제)
+- 기록 대상: 실제 오류뿐 아니라 설계 착오·라이브러리 호환 문제도 포함
+- 사용자의 **수정 요청** (버그 외 별도 요청)도 `R###` 번호로 같은 파일에 기록한다.
+  - 형식: 요청일 / 유형: 수정 요청 / 내용 / 결과
 
 ### 에러 코드
 - 별도 에러 코드 정리 문서 작성 예정 (`errors.md`)

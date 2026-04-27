@@ -4,7 +4,7 @@
 
 - [x] 동행복권 API 확인 → 비공식 API 사용 확정 (무료, 인증 없음)
 - [x] 카카오 알림톡 확인 → 무료 없음, **Mailpit으로 확정**
-- [x] AI API 키 확정 → OpenAI GPT-4o (`OPENAI_API_KEY` — Codex CLI 키 재사용)
+- [x] Claude API 키 확정 → Anthropic Claude (`CLAUDE_API_KEY`)
 - [ ] 무료 Noti 수단 확인 (FCM Web Push 등, 현재 스킵)
 
 ## Phase 1. 프로젝트 기반 세팅
@@ -20,40 +20,46 @@
 - [x] Health 엔드포인트 (`GET /api/health`) + FE 연동 화면
 - [x] 로컬 JAVA_HOME → Java 17 변경 (`~/.zshrc`)
 - [x] FE/BE 빌드 검증 통과
-- [ ] MySQL DB/스키마 생성 (Phase 2 진입 전 — 환경변수 + 사용자 DB 생성 작업)
+- [x] MySQL DB/스키마 생성 (개발/상용 동일 스키마 + 개발 DB 시드)
 
 ## Phase 2. 인증/인가
 
-- [ ] RSA 키 발급 API
-- [ ] 1차 인증 (비밀번호 검증)
-- [ ] 2차 인증 OTP — Skip 옵션 포함
+- [x] RSA 키 발급 API
+- [x] 1차 인증 (비밀번호 검증)
+- [x] 2차 인증 OTP — Skip 옵션 포함
   - [x] 카카오 알림톡 무료 없음 확인 → **Mailpit(이메일) 확정**
-- [ ] JWT 발급 + SSE 연결
-- [ ] Refresh Token 로테이션
-- [ ] 로그아웃
+- [x] JWT 발급 + SSE 연결
+- [x] Refresh Token 로테이션
+- [x] 로그아웃
+- [x] 로그인 실패 횟수 / 계정 잠금 처리
+- [x] OTP / Refresh Token 해시 저장
 
 ## Phase 3. 레이아웃 & 공통 UI
 
-- [ ] LoginLayer 구현
-- [ ] MainLayer 구현 (TopBar + SideMenu + MainContent)
-- [ ] 햄버거 메뉴 슬라이드 동작
-- [ ] 반응형 (Mobile First → Desktop)
+- [x] LoginLayer 구현
+- [x] MainLayer 구현 (TopBar + SideMenu + MainContent)
+- [x] 햄버거 메뉴 슬라이드 동작
+- [x] 반응형 (Mobile First → Desktop)
+  - [x] shadcn/ui 코어 의존성 설치 + 수동 초기화 (Button, Input)
+  - [x] RSA 암호화: PKCS1v1.5 → OAEP(SHA-256/SHA-256) 으로 변경 (Web Crypto API 호환)
 
 ## Phase 4. 핵심 기능 — 번호 생성
 
-- [ ] `user_config` 설정 UI (요일, 총 세트수, 랜덤/AI 비율, 분석 회차, AI 제공자)
-- [ ] 완전 랜덤 번호 생성 로직
-- [ ] AI 분석 번호 생성 로직
-  - [ ] AI 제공자 인터페이스 추상화 (`core.ai`)
-  - [ ] Claude API 구현체
-  - [ ] ChatGPT API 구현체 (선택)
-  - [ ] 실패 시 랜덤 fallback
+- [ ] `generation_rule` 설정 UI (요일, 전략, 엔진, 세트수, 분석 회차, 사용 여부)
+- [ ] 주간 총 세트 수 검증 (row 합계: 1 / 5 / 10 / 15 / 20)
+- [x] 완전 랜덤 번호 생성 로직
+- [x] HOT_NUMBER 번호 생성 로직
+- [ ] MIXED 번호 생성 로직
+- [ ] Claude 호출 조합 엔진 구현
+  - [ ] HOT_NUMBER / MIXED rule 묶음 요청 포맷 정의
+  - [x] Claude API 구현체
+  - [x] 실패 시 LOCAL fallback
 - [ ] 스케줄러 (지정 요일 자동 생성)
 - [ ] 번호 조회 화면 (S02)
 
 ## Phase 5. 핵심 기능 — 결과 비교
 
-- [x] 로또 결과 수집 방법 확정 → 동행복권 비공식 API 사용
+- [x] 로또 결과 수집 방법 확정 → 동행복권 JSON endpoint 사용 (`lt645/selectPstLt645InfoNew.do` + Referer)
 - [ ] 결과 수집 스케줄러 (토요일)
 - [ ] 세트 vs 결과 비교 로직
 - [ ] 결과 화면 (S03)
@@ -84,6 +90,6 @@
 - [ ] 서버 배포
   - [ ] NGINX 설정 (정적 파일 + `/api` → `:8081` 프록시)
   - [ ] Mailpit Docker 설치 (`http://ulmsaga34.cafe24.com:8025`)
-  - [ ] OS 환경변수 등록 (DB, AI API Key 등)
+  - [ ] OS 환경변수 등록 (DB, LLM API Key 등)
   - [ ] Spring Boot jar 배포 (:8081, 외부 미노출)
   - [ ] 도메인 연결 확인 (ulmsaga34.cafe24.com:8080)

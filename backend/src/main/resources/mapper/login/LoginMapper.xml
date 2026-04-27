@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="login">
+
+    <select id="findByUserId" parameterType="string" resultType="map">
+        SELECT user_seq AS userSeq,
+               user_id AS userId,
+               password_hash AS passwordHash,
+               email AS email,
+               role_code AS roleCode,
+               otp_enabled AS otpEnabled,
+               account_status AS accountStatus,
+               failed_login_count AS failedLoginCount,
+               locked_until AS lockedUntil,
+               last_login_at AS lastLoginAt
+        FROM app_user
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="findByUserSeq" parameterType="long" resultType="map">
+        SELECT user_seq AS userSeq,
+               user_id AS userId,
+               email AS email,
+               role_code AS roleCode,
+               otp_enabled AS otpEnabled,
+               account_status AS accountStatus,
+               failed_login_count AS failedLoginCount,
+               locked_until AS lockedUntil,
+               last_login_at AS lastLoginAt
+        FROM app_user
+        WHERE user_seq = #{userSeq}
+    </select>
+
+    <update id="increaseFailedLoginCount" parameterType="long">
+        UPDATE app_user
+        SET failed_login_count = failed_login_count + 1
+        WHERE user_seq = #{userSeq}
+    </update>
+
+    <update id="resetLoginFailures" parameterType="long">
+        UPDATE app_user
+        SET failed_login_count = 0,
+            account_status = 'ACTIVE',
+            locked_until = NULL
+        WHERE user_seq = #{userSeq}
+    </update>
+
+    <update id="lockUser" parameterType="map">
+        UPDATE app_user
+        SET failed_login_count = 0,
+            account_status = 'LOCKED',
+            locked_until = #{lockedUntil}
+        WHERE user_seq = #{userSeq}
+    </update>
+
+    <update id="unlockUser" parameterType="long">
+        UPDATE app_user
+        SET failed_login_count = 0,
+            account_status = 'ACTIVE',
+            locked_until = NULL
+        WHERE user_seq = #{userSeq}
+    </update>
+
+    <update id="updateLastLogin" parameterType="map">
+        UPDATE app_user
+        SET last_login_at = #{lastLoginAt}
+        WHERE user_seq = #{userSeq}
+    </update>
+
+    <insert id="saveOtp" parameterType="map">
+        INSERT INTO otp_code (user_seq, code_hash, expires_at)
+        VALUES (#{userSeq}, #{codeHash}, #{expiresAt})
+    </insert>
+
+    <select id="findLatestActiveOtp" parameterType="map" resultType="map">
+        SELECT otp_id AS otpId,
+               user_seq AS userSeq,
+               code_hash AS codeHash,
+               attempt_count AS attemptCount,
+               expires_at AS expiresAt
+        FROM otp_code
+        WHERE user_seq = #{userSeq}
+          AND used_yn = 'N'
+          AND expires_at > #{now}
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
+    <update id="increaseOtpAttempt" parameterType="long">
+        UPDATE otp_code
+        SET attempt_count = attempt_count + 1
+        WHERE otp_id = #{otpId}
+    </update>
+
+    <update id="markOtpUsed" parameterType="map">
+        UPDATE otp_code
+        SET used_yn = 'Y',
+            used_at = #{usedAt}
+        WHERE otp_id = #{otpId}
+    </update>
+
+    <insert id="saveRefreshToken" parameterType="map">
+        INSERT INTO refresh_token (user_seq, token_hash, expires_at, issued_ip, user_agent)
+        VALUES (#{userSeq}, #{tokenHash}, #{expiresAt}, #{issuedIp}, #{userAgent})
+    </insert>
+
+    <select id="findRefreshToken" parameterType="string" resultType="map">
+        SELECT token_id AS tokenId,
+               user_seq AS userSeq,
+               token_hash AS tokenHash,
+               expires_at AS expiresAt,
+               revoked_at AS revokedAt
+        FROM refresh_token
+        WHERE token_hash = #{tokenHash}
+          AND revoked_at IS NULL
+    </select>
+
+    <update id="revokeRefreshToken" parameterType="map">
+        UPDATE refresh_token
+        SET revoked_at = #{revokedAt}
+        WHERE token_hash = #{tokenHash}
+          AND revoked_at IS NULL
+    </update>
+
+</mapper>

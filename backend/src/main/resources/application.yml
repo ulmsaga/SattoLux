@@ -6,6 +6,10 @@ spring:
     name: sattolux
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema.sql
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: ${DB_URL}
@@ -22,12 +26,12 @@ mybatis:
     default-fetch-size: 100
     default-statement-timeout: 30
 
-# AI (OpenAI GPT-4o)
+# AI (Anthropic Claude)
 ai:
-  openai:
-    api-key: ${OPENAI_API_KEY}
-    model: gpt-4o
-    base-url: https://api.openai.com/v1
+  claude:
+    api-key: ${CLAUDE_API_KEY}
+    model: claude-haiku-4-5-20251001
+    base-url: https://api.anthropic.com
 
 # Mailpit (개발용 메일)
 spring.mail:
@@ -37,9 +41,10 @@ spring.mail:
     mail.smtp.auth: false
     mail.smtp.starttls.enable: false
 
-# 로또 결과 API (동행복권)
-lotto:
-  result-api: https://www.dhlottery.co.kr/common.do?method=getLottoNumber
+# Satto 결과 API (동행복권)
+satto:
+  result-api: https://www.dhlottery.co.kr/lt645/selectPstLt645InfoNew.do
+  result-referer: https://www.dhlottery.co.kr/lt645/result
 
 # 보안 (RSA / JWT)
 security:

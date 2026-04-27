@@ -75,7 +75,7 @@ GET https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo={회차번
 ### 결정
 - OTP 2차 인증 → **Mailpit (이메일)** 대체
 - Mailpit 주소: `http://ulmsaga34.cafe24.com:8025`
-- 소규모(3명) 운영이므로 이메일 방식으로 충분
+- 가족 공유용 단일 계정 운영이므로 이메일 방식으로 충분
 
 ---
 
@@ -84,4 +84,4 @@ GET https://www.dhlottery.co.kr/common.do?method=getLottoNumber&drwNo={회차번
 | 항목 | 상태 |
 |------|------|
 | 무료 Noti (FCM Web Push 등) | 미검토 — 현재 스킵 |
-| AI API (OpenAI GPT-4o) | **확정** — Codex CLI용 `OPENAI_API_KEY` 재사용 |
+| LLM API (Anthropic Claude) | **확정** — `CLAUDE_API_KEY` 사용 |

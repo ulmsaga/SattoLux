@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="makeWeekNum">
+
+    <select id="findActiveRules" parameterType="long" resultType="map">
+        SELECT rule_id AS ruleId,
+               user_seq AS userSeq,
+               day_of_week AS dayOfWeek,
+               method_code AS methodCode,
+               generator_code AS generatorCode,
+               set_count AS setCount,
+               analysis_draw_count AS analysisDrawCount,
+               sort_order AS sortOrder,
+               use_yn AS useYn,
+               created_at AS createdAt,
+               updated_at AS updatedAt
+        FROM generation_rule
+        WHERE user_seq = #{userSeq}
+          AND use_yn = 'Y'
+        ORDER BY day_of_week, sort_order, rule_id
+    </select>
+
+    <select id="findRecentDrawResults" parameterType="int" resultType="map">
+        SELECT result_id AS resultId,
+               draw_no AS drawNo,
+               draw_date AS drawDate,
+               no1 AS no1,
+               no2 AS no2,
+               no3 AS no3,
+               no4 AS no4,
+               no5 AS no5,
+               no6 AS no6,
+               bonus_no AS bonusNo
+        FROM satto_draw_result
+        ORDER BY draw_no DESC
+        LIMIT #{limit}
+    </select>
+
+    <delete id="deleteNumberSetsForRuleScope" parameterType="map">
+        DELETE FROM satto_number_set
+        WHERE user_seq = #{userSeq}
+          AND rule_id = #{ruleId}
+          AND target_year = #{targetYear}
+          AND target_month = #{targetMonth}
+          AND target_week_of_month = #{targetWeekOfMonth}
+    </delete>
+
+    <insert id="saveNumberSet" parameterType="map" useGeneratedKeys="true" keyProperty="setId">
+        INSERT INTO satto_number_set (
+            user_seq,
+            rule_id,
+            target_year,
+            target_month,
+            target_week_of_month,
+            draw_no,
+            method_code,
+            generator_code,
+            no1,
+            no2,
+            no3,
+            no4,
+            no5,
+            no6
+        ) VALUES (
+            #{userSeq},
+            #{ruleId},
+            #{targetYear},
+            #{targetMonth},
+            #{targetWeekOfMonth},
+            #{drawNo},
+            #{methodCode},
+            #{generatorCode},
+            #{no1},
+            #{no2},
+            #{no3},
+            #{no4},
+            #{no5},
+            #{no6}
+        )
+    </insert>
+
+    <select id="findNumberSetsByScope" parameterType="map" resultType="map">
+        SELECT set_id AS setId,
+               user_seq AS userSeq,
+               rule_id AS ruleId,
+               target_year AS targetYear,
+               target_month AS targetMonth,
+               target_week_of_month AS targetWeekOfMonth,
+               draw_no AS drawNo,
+               method_code AS methodCode,
+               generator_code AS generatorCode,
+               no1 AS no1,
+               no2 AS no2,
+               no3 AS no3,
+               no4 AS no4,
+               no5 AS no5,
+               no6 AS no6,
+               created_at AS createdAt
+        FROM satto_number_set
+        WHERE user_seq = #{userSeq}
+          AND target_year = #{targetYear}
+          AND target_month = #{targetMonth}
+          AND target_week_of_month = #{targetWeekOfMonth}
+        ORDER BY rule_id, set_id
+    </select>
+
+</mapper>
