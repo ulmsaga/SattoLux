@@ -54,6 +54,22 @@ public class SseConnectionManager {
         }
     }
 
+    public void sendToUser(Long userSeq, String eventName, Object payload) {
+        List<SseEmitter> emitters = emittersByUserSeq.get(userSeq);
+        if (emitters == null || emitters.isEmpty()) {
+            return;
+        }
+
+        for (SseEmitter emitter : emitters) {
+            try {
+                emitter.send(SseEmitter.event().name(eventName).data(payload));
+            } catch (IOException e) {
+                log.debug("Removing broken SSE emitter while sending event={} to userSeq={}", eventName, userSeq, e);
+                removeEmitter(userSeq, emitter);
+            }
+        }
+    }
+
     @Scheduled(fixedDelay = 30000)
     public void heartbeat() {
         emittersByUserSeq.forEach((userSeq, emitters) -> {

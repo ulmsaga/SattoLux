@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { setTokenGetter } from '@/api/client'
 import { logout as apiLogout, refreshToken as apiRefresh } from '@/api/auth'
+import { getNotifications, markNotificationRead as apiMarkNotificationRead } from '@/api/notifications'
 
 const AuthContext = createContext(null)
 const RT_KEY = 'sattolux_rt'
@@ -19,6 +20,11 @@ export function AuthProvider({ children }) {
     ready: !hasStoredToken(),
   }))
   const refreshTimerRef = useRef(null)
+  const eventSourceRef = useRef(null)
+  const [notificationState, setNotificationState] = useState({
+    unreadCount: 0,
+    notifications: [],
+  })
 
   useEffect(() => {
     setTokenGetter(() => auth.accessToken)
@@ -56,6 +62,11 @@ export function AuthProvider({ children }) {
     setAuth({ accessToken: null, ready: true })
     sessionStorage.removeItem(RT_KEY)
     if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+      eventSourceRef.current = null
+    }
+    setNotificationState({ unreadCount: 0, notifications: [] })
   }, [])
 
   const logout = useCallback(async () => {
@@ -79,6 +90,84 @@ export function AuthProvider({ children }) {
       })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const refreshNotifications = useCallback(async () => {
+    if (!auth.accessToken) return
+    try {
+      const { data } = await getNotifications()
+      setNotificationState({
+        unreadCount: data?.unreadCount ?? 0,
+        notifications: Array.isArray(data?.notifications) ? data.notifications : [],
+      })
+    } catch {
+      // ignore notification fetch failures to avoid breaking auth flow
+    }
+  }, [auth.accessToken])
+
+  const markNotificationRead = useCallback(async (notificationId) => {
+    await apiMarkNotificationRead(notificationId)
+    setNotificationState((current) => {
+      const notifications = current.notifications.map((notification) =>
+        notification.notificationId === notificationId ? { ...notification, readYn: 'Y' } : notification
+      )
+      const unreadCount = notifications.filter((notification) => notification.readYn === 'N').length
+      return { unreadCount, notifications }
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!auth.accessToken) return
+    refreshNotifications()
+  }, [auth.accessToken, refreshNotifications])
+
+  useEffect(() => {
+    if (!auth.accessToken) return
+
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close()
+      eventSourceRef.current = null
+    }
+
+    const eventSource = new EventSource(`/api/auth/sse?accessToken=${encodeURIComponent(auth.accessToken)}`)
+    eventSourceRef.current = eventSource
+
+    eventSource.addEventListener('notification', (event) => {
+      try {
+        const payload = JSON.parse(event.data)
+        setNotificationState((current) => {
+          const nextNotifications = [
+            {
+              notificationId: payload.notificationId,
+              typeCode: payload.type,
+              title: payload.title,
+              message: payload.message,
+              targetYear: payload.targetYear,
+              targetMonth: payload.targetMonth,
+              targetWeekOfMonth: payload.targetWeekOfMonth,
+              drawNo: payload.drawNo,
+              readYn: 'N',
+              createdAt: payload.createdAt,
+            },
+            ...current.notifications.filter((notification) => notification.notificationId !== payload.notificationId),
+          ].slice(0, 10)
+
+          return {
+            unreadCount: current.unreadCount + 1,
+            notifications: nextNotifications,
+          }
+        })
+      } catch {
+        // ignore malformed notification payload
+      }
+    })
+
+    return () => {
+      eventSource.close()
+      if (eventSourceRef.current === eventSource) {
+        eventSourceRef.current = null
+      }
+    }
+  }, [auth.accessToken])
+
   return (
     <AuthContext.Provider value={{
       accessToken: auth.accessToken,
@@ -86,6 +175,10 @@ export function AuthProvider({ children }) {
       ready: auth.ready,
       saveTokens,
       logout,
+      unreadCount: notificationState.unreadCount,
+      notifications: notificationState.notifications,
+      refreshNotifications,
+      markNotificationRead,
     }}>
       {children}
     </AuthContext.Provider>

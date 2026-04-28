@@ -4,6 +4,8 @@ import LoginLayer from '@/layouts/LoginLayer'
 import MainLayer from '@/layouts/MainLayer'
 import LoginPage from '@/pages/LoginPage'
 import MakeWeekNumPage from '@/pages/MakeWeekNumPage'
+import ResultPage from '@/pages/ResultPage'
+import SettingsPage from '@/pages/SettingsPage'
 
 function AppLoader() {
   return (
@@ -38,8 +40,8 @@ export default function App() {
           <Route element={<RequireAuth><MainLayer /></RequireAuth>}>
             <Route index element={<Navigate to="/make-week-num" replace />} />
             <Route path="/make-week-num" element={<MakeWeekNumPage />} />
-            <Route path="/result" element={<div className="p-8 text-center text-muted-foreground">결과 비교 — Phase 5</div>} />
-            <Route path="/settings" element={<div className="p-8 text-center text-muted-foreground">설정 — Phase 4</div>} />
+            <Route path="/result" element={<ResultPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>

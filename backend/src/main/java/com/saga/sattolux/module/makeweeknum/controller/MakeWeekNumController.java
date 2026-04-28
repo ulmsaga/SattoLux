@@ -2,6 +2,7 @@ package com.saga.sattolux.module.makeweeknum.controller;
 
 import com.saga.sattolux.module.makeweeknum.dto.GenerationRuleResponse;
 import com.saga.sattolux.module.makeweeknum.dto.GenerateNumbersResponse;
+import com.saga.sattolux.module.makeweeknum.dto.MakeWeekNumStatusResponse;
 import com.saga.sattolux.module.makeweeknum.dto.SattoNumberSetResponse;
 import com.saga.sattolux.module.makeweeknum.service.MakeWeekNumService;
 import lombok.RequiredArgsConstructor;
@@ -35,9 +36,21 @@ public class MakeWeekNumController {
         return ResponseEntity.ok(makeWeekNumService.generateCurrentWeekNumbers(userSeq, force));
     }
 
+    @PostMapping("/manual-generate")
+    public ResponseEntity<GenerateNumbersResponse> generateManualCurrentWeek(Authentication authentication) {
+        Long userSeq = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(makeWeekNumService.generateManualCurrentWeekNumbers(userSeq));
+    }
+
     @GetMapping("/current-week")
     public ResponseEntity<List<SattoNumberSetResponse>> getCurrentWeekNumbers(Authentication authentication) {
         Long userSeq = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(makeWeekNumService.getCurrentWeekNumbers(userSeq));
+    }
+
+    @GetMapping("/status")
+    public ResponseEntity<MakeWeekNumStatusResponse> getCurrentWeekStatus(Authentication authentication) {
+        Long userSeq = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(makeWeekNumService.getCurrentWeekStatus(userSeq));
     }
 }

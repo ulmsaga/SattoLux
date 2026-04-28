@@ -22,6 +22,11 @@ public class MakeWeekNumDaoImpl implements MakeWeekNumDao {
     }
 
     @Override
+    public List<Long> findUserSeqsByRuleDayOfWeek(int dayOfWeek) {
+        return sql.selectList(NS + "findUserSeqsByRuleDayOfWeek", dayOfWeek);
+    }
+
+    @Override
     public List<Map<String, Object>> findRecentDrawResults(int limit) {
         return sql.selectList(NS + "findRecentDrawResults", limit);
     }

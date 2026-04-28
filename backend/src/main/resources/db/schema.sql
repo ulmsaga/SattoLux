@@ -135,3 +135,24 @@ CREATE TABLE IF NOT EXISTS `satto_match_result` (
     CONSTRAINT `fk_satto_match_result_result`
         FOREIGN KEY (`result_id`) REFERENCES `satto_draw_result` (`result_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 사용자 알림
+CREATE TABLE IF NOT EXISTS `app_notification` (
+    `notification_id`       BIGINT          NOT NULL AUTO_INCREMENT,
+    `user_seq`              BIGINT          NOT NULL,
+    `type_code`             VARCHAR(30)     NOT NULL,
+    `title`                 VARCHAR(100)    NOT NULL,
+    `message`               VARCHAR(255)    NOT NULL,
+    `target_year`           SMALLINT                 DEFAULT NULL,
+    `target_month`          TINYINT                  DEFAULT NULL,
+    `target_week_of_month`  TINYINT                  DEFAULT NULL,
+    `draw_no`               INT                      DEFAULT NULL,
+    `read_yn`               CHAR(1)         NOT NULL DEFAULT 'N',
+    `read_at`               DATETIME                 DEFAULT NULL,
+    `created_at`            DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`notification_id`),
+    UNIQUE KEY `uk_app_notification_result_ready` (`user_seq`, `type_code`, `target_year`, `target_month`, `target_week_of_month`),
+    INDEX `idx_app_notification_user_read` (`user_seq`, `read_yn`, `created_at`),
+    CONSTRAINT `fk_app_notification_user`
+        FOREIGN KEY (`user_seq`) REFERENCES `app_user` (`user_seq`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

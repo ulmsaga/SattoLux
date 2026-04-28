@@ -22,6 +22,8 @@
 - NGINX `/api` → `localhost:8081` 프록시 (BE는 외부 미노출)
 - 개발/상용 DB 분리: 환경변수 `DB_URL` 하나로 전환 (`SATTOLUX_DEV_DB` ↔ `SATTOLUX_DB`)
 - DB 패스워드는 OS 환경변수 `DB_PASSWORD`로만 관리 — 파일 기재 금지
+- 번호 자동 생성 스케줄 시각은 Spring properties로 관리, 초기값은 `09:00`
+- 스케줄 판정 기준 시간대는 서버 운영 시간대(`Asia/Seoul`)로 고정
 
 ## 시스템 구성
 
@@ -42,7 +44,7 @@
 
 ### 번호 자동 생성 흐름
 ```
-스케줄러 (지정 요일)
+스케줄러 (지정 요일, 기본 09:00)
   → generation_rule 조회 (활성 row 전체)
   → row별 전략/엔진 실행
     - RANDOM + LOCAL: 서버에서 완전 랜덤 1~45, 6개 생성
@@ -52,18 +54,48 @@
   → 사용자 조회 시 노출
 ```
 
+### 번호 수동 생성 활성 조건
+```
+현재 시각이 properties에 정의된 자동 생성 시각 이상
+  AND 오늘이 사용자의 generation_rule 대상 요일
+  AND 현재 주차 기준 satto_number_set이 아직 없음
+→ FE에서 "수동 생성" 버튼 활성화
+```
+
+- 수동 생성은 "자동 생성 실패 복구" 목적의 보조 수단으로 사용
+- 자동 생성 시각 이전에는 수동 생성 버튼을 기본 비활성 상태로 둠
+- 운영자가 스케줄 시각을 변경하더라도 FE/BE 판단 기준은 동일한 properties 값 사용
+
 ### 현재 구현된 백엔드 API
 - `GET /api/make-week-num/rules`
   - 로그인 사용자의 활성 generation_rule 조회
+- `GET /api/config/generation-rules`
+  - generation_rule 설정 조회
+- `PUT /api/config/generation-rules`
+  - generation_rule 설정 저장
 - `POST /api/make-week-num/generate`
   - 현재 주차 기준 번호 생성 실행
 - `POST /api/make-week-num/generate?force=true`
   - 요일 검증을 무시하고 수동 생성
-  - 현재는 `RANDOM + LOCAL` 생성 완료
+  - `RANDOM + LOCAL` 생성 완료
   - `HOT_NUMBER + CLAUDE`는 Claude 호출 후 실패 시 `HOT_NUMBER + LOCAL`로 fallback
   - `MIXED`는 아직 미구현
+- `POST /api/make-week-num/manual-generate`
+  - 자동 생성 누락 조건일 때만 수동 생성 허용
 - `GET /api/make-week-num/current-week`
   - 현재 주차 기준 저장된 번호 세트 조회
+- `GET /api/make-week-num/status`
+  - 자동 생성 요일/시각, 수동 생성 가능 여부, 비활성 사유 조회
+- `GET /api/notifications`
+  - unread count + 최근 알림 목록 조회
+- `POST /api/notifications/{notificationId}/read`
+  - 알림 읽음 처리
+- `POST /api/notifications/admin/replay-result-ready`
+  - 관리자 전용 SSE 결과 알림 재전송 테스트
+- `GET /api/result/week`
+  - 특정 연/월/주차 결과 및 내 번호 비교 결과 조회
+- `POST /api/auth/admin/dev-users/ensure-general`
+  - dev 환경에서 일반 사용자 계정/기본 rule 보장
 
 ### Claude 번호 생성 상세
 ```
@@ -78,13 +110,123 @@
 ### 추첨 결과 비교 흐름
 ```
 스케줄러 (토요일 추첨 후)
-  → 동행복권 JSON endpoint 조회 (`lt645/selectPstLt645InfoNew.do` + Referer)
-  → satto_draw_result 저장
+  → 토요일 21:00 ~ 23:00, 5분 간격으로 동행복권 JSON endpoint 조회
+  → 먼저 DB에서 해당 회차 결과 존재 여부 확인
+    - 이미 있으면 즉시 종료 (추가 API 호출 안 함)
+  → 결과가 없으면 API 호출 (`lt645/selectPstLt645InfoNew.do` + Referer)
+  → 결과가 아직 미오픈이면 종료
+  → 결과가 있으면 satto_draw_result upsert
   → 해당 주차 satto_number_set과 비교
   → satto_match_result 저장
+  → 결과 도착 알림 DB 저장
+  → 현재 접속 중 사용자에게 SSE push
   → 결과 화면 노출
-  → (옵션) Noti 발송
+  → 일요일 보정 수집 2회 추가 가능
+    - 1차: 일요일 00:00
+    - 2차: 일요일 09:00
 ```
+
+- 일요일 보정 수집 목적
+  - 토요일 야간 구간에 결과 반영이 지연되더라도 다음날 자동 회수할 수 있게 함
+  - 두 보정 시점 모두 먼저 DB를 확인하고, 이미 결과가 저장되어 있으면 외부 API 호출 없이 종료
+- 운영 기본안
+  - 토요일 `21:00 ~ 23:00` 5분 간격 폴링
+  - 일요일 `00:00`, `09:00` 보정 실행
+  - 결과가 최초 저장된 이후 동일 회차에 대한 추가 수집은 모두 skip
+
+### 결과 비교 수동 테스트 시나리오
+```
+1. 현재 주차 satto_number_set 데이터를 비운다.
+2. 지난주 기준으로 테스트용 10세트를 생성해 둔다.
+3. 관리자가 수동 테스트 기능을 실행한다.
+4. 수동 테스트 기능은 최신 추첨 결과(대부분 지난주 회차)를 동행복권 API에서 조회한다.
+5. 조회한 최신 결과를 지난주 10세트와 비교한다.
+6. satto_match_result 저장, 결과 화면 노출, 알림 생성/SSE push까지 동일 흐름으로 검증한다.
+```
+
+- 수동 테스트 목적
+  - 토요일 실시간 추첨 시각을 기다리지 않고 결과 비교/알림 흐름을 검증하기 위함
+  - 실제 운영 스케줄러와 동일한 비교 로직을 재사용하되, 테스트 대상 주차만 지난주로 고정해 검증 가능하게 함
+- 권장 테스트 절차
+  - 현재 주차 번호 세트는 제거하거나 제외한다
+  - 지난주 기준으로 10세트를 먼저 생성한다
+  - 수동 테스트 실행 시 최신 결과를 가져와 지난주 세트와 매칭한다
+  - 결과 페이지와 알림 뱃지까지 함께 확인한다
+
+### 결과 수집 스케줄러 테스트 전략
+```
+1. 비즈니스 로직 검증
+   - 스케줄러가 호출하는 결과 수집/비교/알림 로직을 수동 테스트 기능으로 직접 실행한다.
+
+2. 스케줄러 트리거 검증
+   - local/test 환경에서는 운영 cron 대신 짧은 주기로 스케줄러를 실행한다.
+   - 예: 10초 또는 1분 간격
+   - 실행 로그, savedCount, skip 여부를 확인한다.
+
+3. 시간 조건 검증
+   - 토요일 21:00~23:00
+   - 일요일 00:00
+   - 일요일 09:00
+   - 이미 결과가 저장된 경우 skip
+   위 조건은 정책 로직 단위 테스트로 검증한다.
+```
+
+- 테스트 전략 목적
+  - 실제 토요일 추첨 시각을 기다리지 않고 결과 수집 스케줄러의 정상 동작을 빠르게 검증하기 위함
+  - 스케줄러 실행 여부와 비즈니스 로직 정상 여부를 분리해서 확인하기 위함
+- 권장 검증 순서
+  - 먼저 수동 테스트 기능으로 결과 수집/비교/알림 흐름을 검증한다
+  - 그 다음 local/test 전용 짧은 cron으로 스케줄러가 실제 실행되는지 확인한다
+  - 마지막으로 시간 판정 정책을 단위 테스트로 검증한다
+- 확인 포인트
+  - 스케줄러가 실제로 실행되었는지
+  - 조건에 맞으면 외부 API 호출이 수행되었는지
+  - DB에 해당 회차 결과가 이미 있으면 skip 되었는지
+  - `satto_draw_result`, `satto_match_result`, `app_notification`이 중복 없이 저장되는지
+  - FE 알림 뱃지와 SSE 수신이 정상 동작하는지
+
+- 현재 코드 기준 구현 완료 범위
+  - 결과 수집 스케줄러
+  - `satto_draw_result` upsert
+  - `satto_number_set` vs 당첨 결과 비교
+  - `satto_match_result` upsert
+  - 결과 페이지 조회 API
+  - ADMIN 수동 결과 테스트 API (`/api/result/admin/manual-test-latest`)
+  - 결과 알림 DB 저장 + SSE push
+- 아직 남은 검증
+  - 실제 결과 오픈 시점 기준 end-to-end 검증
+  - 일요일 `00:00`, `09:00` 보정 스케줄 반영
+  - 지난주 기준 테스트 세트 10건 준비 후 수동 테스트 실검증
+
+### 결과 도착 알림 흐름
+```
+결과 저장 완료
+  → "RESULT_READY" 알림 1건 생성 (회차/주차 기준 중복 방지)
+  → unread 상태로 DB 저장
+  → SSE 이벤트로 FE에 즉시 push
+  → FE TopBar 뱃지 +1 표시
+  → 사용자가 알림 클릭
+  → "2026년 4월 5주차 결과가 도착했습니다." 노출
+  → /result?year=2026&month=4&week=5 형태로 이동
+  → 읽음 처리
+```
+
+- SSE는 실시간 전달용, 알림의 진실 소스는 DB로 관리
+- 브라우저 미접속/재연결 상황에서도 unread 알림은 복구 가능해야 함
+- 같은 회차에 대해 결과 도착 알림은 1회만 생성
+- 관리자만 기존 결과 알림을 SSE로 재전송하는 테스트 기능을 사용할 수 있음
+
+### 권한 정책
+- `app_user.role_code`를 그대로 사용
+- 권한 값은 문자열 기준
+  - `ADMIN`
+  - `USER`
+- 관리자 전용 기능
+  - 테스트 세트 준비
+  - 지난주 결과 테스트
+  - SSE 알림 재전송
+  - dev 일반 사용자 계정 보장 API
+- 일반 사용자는 위 기능을 FE에서 숨기고, BE에서도 `403 Forbidden`으로 차단
 
 ### 인증 흐름
 ```
@@ -113,7 +255,9 @@
   - `SATTOLUX_DEV_DB`, `SATTOLUX_DB`에 동일 스키마 적용
 - `./scripts/init-db.sh --with-dev-seed`
   - `SATTOLUX_DEV_DB`에만 개발용 공유 계정 + 기본 rule 시드 적용
-  - 계정 정보는 `.env`의 `LOGIN_USER`, `LOGIN_PW`, 선택값 `LOGIN_EMAIL` 기준
+  - 관리자 계정은 `.env`의 `LOGIN_USER`, `LOGIN_PW`, 선택값 `LOGIN_EMAIL` 기준
+  - 일반 사용자 계정은 `.env`의 `GENERAL_LOGIN_PW`를 필수로 사용하고, `GENERAL_LOGIN_USER`, `GENERAL_LOGIN_EMAIL`은 선택값으로 사용
+  - 일반 사용자 비밀번호는 관리자 비밀번호를 기본값으로 상속하지 않음
 - `./scripts/sync-draw-results.sh`
   - `SATTOLUX_DEV_DB`, `SATTOLUX_DB`에 동일한 추첨 결과 upsert
   - 기본값은 DEV DB 마지막 저장 회차 다음부터 최신 회차까지 동기화
@@ -128,6 +272,7 @@
 | `satto_number_set` | 생성된 번호 세트 |
 | `satto_draw_result` | 추첨 결과 (공공 API or 스크래핑) |
 | `satto_match_result` | 세트 vs 결과 비교 |
+| `app_notification` | 결과 도착 등 사용자 알림 저장 + unread 관리 |
 
 ### `app_user`
 - 로그인/인증/인가 전용 테이블

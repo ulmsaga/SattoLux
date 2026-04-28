@@ -5,6 +5,7 @@ import java.util.Map;
 
 public interface MakeWeekNumDao {
     List<Map<String, Object>> findActiveRules(Long userSeq);
+    List<Long> findUserSeqsByRuleDayOfWeek(int dayOfWeek);
     List<Map<String, Object>> findRecentDrawResults(int limit);
     void deleteNumberSetsForRuleScope(Long userSeq, Long ruleId, int targetYear, int targetMonth, int targetWeekOfMonth);
     void saveNumberSet(Map<String, Object> params);

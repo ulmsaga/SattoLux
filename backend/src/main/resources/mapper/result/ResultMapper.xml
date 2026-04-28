@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="result">
+
+    <select id="findLatestSavedDrawNo" resultType="int">
+        SELECT COALESCE(MAX(draw_no), 0)
+        FROM satto_draw_result
+    </select>
+
+    <select id="findDrawResultByDrawNo" parameterType="int" resultType="map">
+        SELECT result_id AS resultId,
+               draw_no AS drawNo,
+               draw_date AS drawDate,
+               no1 AS no1,
+               no2 AS no2,
+               no3 AS no3,
+               no4 AS no4,
+               no5 AS no5,
+               no6 AS no6,
+               bonus_no AS bonusNo
+        FROM satto_draw_result
+        WHERE draw_no = #{drawNo}
+    </select>
+
+    <insert id="upsertDrawResult" parameterType="map">
+        INSERT INTO satto_draw_result (
+            draw_no,
+            draw_date,
+            no1,
+            no2,
+            no3,
+            no4,
+            no5,
+            no6,
+            bonus_no
+        ) VALUES (
+            #{drawNo},
+            #{drawDate},
+            #{no1},
+            #{no2},
+            #{no3},
+            #{no4},
+            #{no5},
+            #{no6},
+            #{bonusNo}
+        )
+        ON DUPLICATE KEY UPDATE
+            draw_date = VALUES(draw_date),
+            no1 = VALUES(no1),
+            no2 = VALUES(no2),
+            no3 = VALUES(no3),
+            no4 = VALUES(no4),
+            no5 = VALUES(no5),
+            no6 = VALUES(no6),
+            bonus_no = VALUES(bonus_no)
+    </insert>
+
+    <select id="findNumberSetsByScope" parameterType="map" resultType="map">
+        SELECT set_id AS setId,
+               user_seq AS userSeq,
+               rule_id AS ruleId,
+               method_code AS methodCode,
+               generator_code AS generatorCode,
+               no1 AS no1,
+               no2 AS no2,
+               no3 AS no3,
+               no4 AS no4,
+               no5 AS no5,
+               no6 AS no6
+        FROM satto_number_set
+        WHERE target_year = #{targetYear}
+          AND target_month = #{targetMonth}
+          AND target_week_of_month = #{targetWeekOfMonth}
+    </select>
+
+    <update id="updateNumberSetDrawNo" parameterType="map">
+        UPDATE satto_number_set
+        SET draw_no = #{drawNo}
+        WHERE set_id = #{setId}
+    </update>
+
+    <insert id="upsertMatchResult" parameterType="map">
+        INSERT INTO satto_match_result (
+            set_id,
+            result_id,
+            match_count,
+            bonus_match,
+            `rank`
+        ) VALUES (
+            #{setId},
+            #{resultId},
+            #{matchCount},
+            #{bonusMatch},
+            #{rank}
+        )
+        ON DUPLICATE KEY UPDATE
+            match_count = VALUES(match_count),
+            bonus_match = VALUES(bonus_match),
+            `rank` = VALUES(`rank`)
+    </insert>
+
+    <select id="findWeekDrawResultByScope" parameterType="map" resultType="map">
+        SELECT dr.result_id AS resultId,
+               dr.draw_no AS drawNo,
+               dr.draw_date AS drawDate,
+               dr.no1 AS no1,
+               dr.no2 AS no2,
+               dr.no3 AS no3,
+               dr.no4 AS no4,
+               dr.no5 AS no5,
+               dr.no6 AS no6,
+               dr.bonus_no AS bonusNo
+        FROM satto_draw_result dr
+        JOIN satto_number_set sns
+          ON sns.draw_no = dr.draw_no
+        WHERE sns.target_year = #{targetYear}
+          AND sns.target_month = #{targetMonth}
+          AND sns.target_week_of_month = #{targetWeekOfMonth}
+        ORDER BY dr.draw_no DESC
+        LIMIT 1
+    </select>
+
+    <select id="findMatchedSetsByScope" parameterType="map" resultType="map">
+        SELECT sns.set_id AS setId,
+               sns.rule_id AS ruleId,
+               sns.method_code AS methodCode,
+               sns.generator_code AS generatorCode,
+               sns.no1 AS no1,
+               sns.no2 AS no2,
+               sns.no3 AS no3,
+               sns.no4 AS no4,
+               sns.no5 AS no5,
+               sns.no6 AS no6,
+               smr.match_count AS matchCount,
+               smr.bonus_match AS bonusMatch,
+               smr.`rank` AS `rank`
+        FROM satto_number_set sns
+        LEFT JOIN satto_match_result smr
+          ON smr.set_id = sns.set_id
+        WHERE sns.user_seq = #{userSeq}
+          AND sns.target_year = #{targetYear}
+          AND sns.target_month = #{targetMonth}
+          AND sns.target_week_of_month = #{targetWeekOfMonth}
+        ORDER BY sns.rule_id, sns.set_id
+    </select>
+
+</mapper>

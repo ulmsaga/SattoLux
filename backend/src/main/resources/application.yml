@@ -45,6 +45,13 @@ spring.mail:
 satto:
   result-api: https://www.dhlottery.co.kr/lt645/selectPstLt645InfoNew.do
   result-referer: https://www.dhlottery.co.kr/lt645/result
+  result:
+    scheduler:
+      cron: "0 */5 21-23 * * SAT"
+  generation:
+    scheduler:
+      time: 09:00
+      zone: Asia/Seoul
 
 # 보안 (RSA / JWT)
 security:

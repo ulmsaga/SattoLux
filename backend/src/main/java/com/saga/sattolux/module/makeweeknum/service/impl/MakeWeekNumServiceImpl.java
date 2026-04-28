@@ -6,18 +6,21 @@ import com.saga.sattolux.core.ai.NumberGeneratorEngine;
 import com.saga.sattolux.module.makeweeknum.dao.MakeWeekNumDao;
 import com.saga.sattolux.module.makeweeknum.dto.GenerationRuleResponse;
 import com.saga.sattolux.module.makeweeknum.dto.GenerateNumbersResponse;
+import com.saga.sattolux.module.makeweeknum.dto.MakeWeekNumStatusResponse;
 import com.saga.sattolux.module.makeweeknum.dto.SattoNumberSetResponse;
 import com.saga.sattolux.module.makeweeknum.dto.SkippedRuleResponse;
+import com.saga.sattolux.module.makeweeknum.service.GenerationSchedulePolicy;
 import com.saga.sattolux.module.makeweeknum.service.MakeWeekNumService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,6 +41,7 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
 
     private final MakeWeekNumDao makeWeekNumDao;
     private final List<NumberGeneratorEngine> numberGeneratorEngines;
+    private final GenerationSchedulePolicy generationSchedulePolicy;
 
     @Override
     public List<GenerationRuleResponse> getActiveRules(Long userSeq) {
@@ -50,10 +54,15 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
     @Override
     @Transactional
     public GenerateNumbersResponse generateCurrentWeekNumbers(Long userSeq, boolean force) {
-        LocalDate today = LocalDate.now();
-        int targetYear = today.getYear();
-        int targetMonth = today.getMonthValue();
-        int targetWeekOfMonth = weekOfMonth(today);
+        return generateNumbersForDate(userSeq, generationSchedulePolicy.today(), force);
+    }
+
+    @Override
+    @Transactional
+    public GenerateNumbersResponse generateNumbersForDate(Long userSeq, LocalDate targetDate, boolean force) {
+        int targetYear = targetDate.getYear();
+        int targetMonth = targetDate.getMonthValue();
+        int targetWeekOfMonth = generationSchedulePolicy.weekOfMonth(targetDate);
 
         List<Map<String, Object>> activeRules = makeWeekNumDao.findActiveRules(userSeq);
         List<SattoNumberSetResponse> generatedSets = new ArrayList<>();
@@ -64,7 +73,7 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
             String methodCode = getString(rule, "methodCode");
             String generatorCode = getString(rule, "generatorCode");
 
-            if (!force && !isTodayRule(rule, today)) {
+            if (!force && !isTodayRule(rule, targetDate)) {
                 skippedRules.add(new SkippedRuleResponse(ruleId, methodCode, generatorCode, "오늘 실행 대상 요일이 아닙니다."));
                 continue;
             }
@@ -113,11 +122,64 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
 
     @Override
     public List<SattoNumberSetResponse> getCurrentWeekNumbers(Long userSeq) {
-        LocalDate today = LocalDate.now();
-        return makeWeekNumDao.findNumberSetsByScope(userSeq, today.getYear(), today.getMonthValue(), weekOfMonth(today))
+        LocalDate today = generationSchedulePolicy.today();
+        return makeWeekNumDao.findNumberSetsByScope(userSeq, today.getYear(), today.getMonthValue(), generationSchedulePolicy.weekOfMonth(today))
                 .stream()
                 .map(this::toNumberSetResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public GenerateNumbersResponse generateManualCurrentWeekNumbers(Long userSeq) {
+        WeekStatus weekStatus = evaluateWeekStatus(userSeq);
+        if (!weekStatus.manualGenerationAvailable()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, weekStatus.manualGenerationReason());
+        }
+        return generateCurrentWeekNumbers(userSeq, false);
+    }
+
+    @Override
+    public MakeWeekNumStatusResponse getCurrentWeekStatus(Long userSeq) {
+        WeekStatus weekStatus = evaluateWeekStatus(userSeq);
+        return new MakeWeekNumStatusResponse(
+                weekStatus.targetYear(),
+                weekStatus.targetMonth(),
+                weekStatus.targetWeekOfMonth(),
+                generationSchedulePolicy.schedulerTimeText(),
+                generationSchedulePolicy.schedulerZoneText(),
+                weekStatus.configuredDayOfWeek(),
+                weekStatus.hasActiveRules(),
+                weekStatus.todayIsConfiguredDay(),
+                weekStatus.scheduleTimeReached(),
+                weekStatus.hasCurrentWeekNumbers(),
+                weekStatus.manualGenerationAvailable(),
+                weekStatus.manualGenerationReason()
+        );
+    }
+
+    @Override
+    @Transactional
+    public int generateScheduledWeekNumbers() {
+        LocalDate today = generationSchedulePolicy.today();
+        int todayRuleDay = toRuleDayValue(today.getDayOfWeek());
+        int generatedUserCount = 0;
+
+        for (Long userSeq : makeWeekNumDao.findUserSeqsByRuleDayOfWeek(todayRuleDay)) {
+            WeekStatus weekStatus = evaluateWeekStatus(userSeq);
+            if (!weekStatus.hasActiveRules() || !weekStatus.todayIsConfiguredDay() || weekStatus.hasCurrentWeekNumbers()) {
+                continue;
+            }
+
+            try {
+                generateCurrentWeekNumbers(userSeq, false);
+                generatedUserCount++;
+            } catch (Exception e) {
+                log.error("Scheduled generation failed for userSeq={}", userSeq, e);
+            }
+        }
+
+        return generatedUserCount;
     }
 
     private boolean isTodayRule(Map<String, Object> rule, LocalDate today) {
@@ -137,8 +199,67 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
         };
     }
 
-    private int weekOfMonth(LocalDate date) {
-        return date.get(WeekFields.of(Locale.KOREA).weekOfMonth());
+    private WeekStatus evaluateWeekStatus(Long userSeq) {
+        LocalDate today = generationSchedulePolicy.today();
+        int targetYear = today.getYear();
+        int targetMonth = today.getMonthValue();
+        int targetWeekOfMonth = generationSchedulePolicy.weekOfMonth(today);
+
+        List<Map<String, Object>> activeRules = makeWeekNumDao.findActiveRules(userSeq);
+        List<Map<String, Object>> currentWeekNumberSets = makeWeekNumDao.findNumberSetsByScope(
+                userSeq, targetYear, targetMonth, targetWeekOfMonth
+        );
+
+        if (activeRules.isEmpty()) {
+            return new WeekStatus(
+                    targetYear,
+                    targetMonth,
+                    targetWeekOfMonth,
+                    null,
+                    false,
+                    false,
+                    false,
+                    !currentWeekNumberSets.isEmpty(),
+                    false,
+                    "활성 생성 규칙이 없습니다."
+            );
+        }
+
+        Integer configuredDayOfWeek = getInt(activeRules.get(0), "dayOfWeek");
+        boolean todayIsConfiguredDay = configuredDayOfWeek == toRuleDayValue(today.getDayOfWeek());
+        boolean scheduleTimeReached = generationSchedulePolicy.isScheduleTimeReached(generationSchedulePolicy.now());
+        boolean hasCurrentWeekNumbers = !currentWeekNumberSets.isEmpty();
+
+        String reason = resolveManualGenerationReason(todayIsConfiguredDay, scheduleTimeReached, hasCurrentWeekNumbers);
+        boolean manualGenerationAvailable = reason == null;
+
+        return new WeekStatus(
+                targetYear,
+                targetMonth,
+                targetWeekOfMonth,
+                configuredDayOfWeek,
+                true,
+                todayIsConfiguredDay,
+                scheduleTimeReached,
+                hasCurrentWeekNumbers,
+                manualGenerationAvailable,
+                manualGenerationAvailable ? "자동 생성 누락 상태입니다. 수동 생성이 가능합니다." : reason
+        );
+    }
+
+    private String resolveManualGenerationReason(boolean todayIsConfiguredDay,
+                                                 boolean scheduleTimeReached,
+                                                 boolean hasCurrentWeekNumbers) {
+        if (!todayIsConfiguredDay) {
+            return "오늘은 자동 생성 대상 요일이 아닙니다.";
+        }
+        if (!scheduleTimeReached) {
+            return "자동 생성 기준 시각 이전입니다.";
+        }
+        if (hasCurrentWeekNumbers) {
+            return "이미 이번 주 번호가 생성되어 있습니다.";
+        }
+        return null;
     }
 
     private RuleGenerationOutcome generateRuleSets(Map<String, Object> rule) {
@@ -409,5 +530,17 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
     }
 
     private record RuleGenerationOutcome(List<GeneratedSet> generatedSets, String skippedReason) {
+    }
+
+    private record WeekStatus(int targetYear,
+                              int targetMonth,
+                              int targetWeekOfMonth,
+                              Integer configuredDayOfWeek,
+                              boolean hasActiveRules,
+                              boolean todayIsConfiguredDay,
+                              boolean scheduleTimeReached,
+                              boolean hasCurrentWeekNumbers,
+                              boolean manualGenerationAvailable,
+                              String manualGenerationReason) {
     }
 }

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="notification">
+
+    <select id="findRecentNotifications" parameterType="map" resultType="map">
+        SELECT notification_id AS notificationId,
+               type_code AS typeCode,
+               title AS title,
+               message AS message,
+               target_year AS targetYear,
+               target_month AS targetMonth,
+               target_week_of_month AS targetWeekOfMonth,
+               draw_no AS drawNo,
+               read_yn AS readYn,
+               created_at AS createdAt
+        FROM app_notification
+        WHERE user_seq = #{userSeq}
+        ORDER BY created_at DESC, notification_id DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="countUnreadNotifications" parameterType="long" resultType="int">
+        SELECT COUNT(*)
+        FROM app_notification
+        WHERE user_seq = #{userSeq}
+          AND read_yn = 'N'
+    </select>
+
+    <select id="findResultReadyNotification" parameterType="map" resultType="map">
+        SELECT notification_id AS notificationId,
+               user_seq AS userSeq,
+               type_code AS typeCode,
+               title AS title,
+               message AS message,
+               target_year AS targetYear,
+               target_month AS targetMonth,
+               target_week_of_month AS targetWeekOfMonth,
+               draw_no AS drawNo,
+               read_yn AS readYn,
+               created_at AS createdAt
+        FROM app_notification
+        WHERE user_seq = #{userSeq}
+          AND type_code = 'RESULT_READY'
+          AND target_year = #{targetYear}
+          AND target_month = #{targetMonth}
+          AND target_week_of_month = #{targetWeekOfMonth}
+        LIMIT 1
+    </select>
+
+    <insert id="insertNotification" parameterType="map">
+        INSERT INTO app_notification (
+            user_seq,
+            type_code,
+            title,
+            message,
+            target_year,
+            target_month,
+            target_week_of_month,
+            draw_no
+        ) VALUES (
+            #{userSeq},
+            #{typeCode},
+            #{title},
+            #{message},
+            #{targetYear},
+            #{targetMonth},
+            #{targetWeekOfMonth},
+            #{drawNo}
+        )
+    </insert>
+
+    <update id="markNotificationRead" parameterType="map">
+        UPDATE app_notification
+        SET read_yn = 'Y',
+            read_at = #{readAt}
+        WHERE user_seq = #{userSeq}
+          AND notification_id = #{notificationId}
+          AND read_yn = 'N'
+    </update>
+
+</mapper>

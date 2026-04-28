@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="generationRuleConfig">
+
+    <select id="findRulesByUserSeq" parameterType="long" resultType="map">
+        SELECT rule_id AS ruleId,
+               user_seq AS userSeq,
+               day_of_week AS dayOfWeek,
+               method_code AS methodCode,
+               generator_code AS generatorCode,
+               set_count AS setCount,
+               analysis_draw_count AS analysisDrawCount,
+               sort_order AS sortOrder,
+               use_yn AS useYn
+        FROM generation_rule
+        WHERE user_seq = #{userSeq}
+        ORDER BY sort_order, rule_id
+    </select>
+
+    <insert id="insertRule" parameterType="map" useGeneratedKeys="true" keyProperty="ruleId">
+        INSERT INTO generation_rule (
+            user_seq,
+            day_of_week,
+            method_code,
+            generator_code,
+            set_count,
+            analysis_draw_count,
+            sort_order,
+            use_yn
+        ) VALUES (
+            #{userSeq},
+            #{dayOfWeek},
+            #{methodCode},
+            #{generatorCode},
+            #{setCount},
+            #{analysisDrawCount},
+            #{sortOrder},
+            #{useYn}
+        )
+    </insert>
+
+    <update id="updateRule" parameterType="map">
+        UPDATE generation_rule
+        SET day_of_week = #{dayOfWeek},
+            method_code = #{methodCode},
+            generator_code = #{generatorCode},
+            set_count = #{setCount},
+            analysis_draw_count = #{analysisDrawCount},
+            sort_order = #{sortOrder},
+            use_yn = #{useYn}
+        WHERE user_seq = #{userSeq}
+          AND rule_id = #{ruleId}
+    </update>
+
+    <delete id="deleteRule" parameterType="map">
+        DELETE FROM generation_rule
+        WHERE user_seq = #{userSeq}
+          AND rule_id = #{ruleId}
+    </delete>
+
+</mapper>

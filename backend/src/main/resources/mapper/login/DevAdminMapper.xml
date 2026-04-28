@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="devAdmin">
+
+    <insert id="insertUser" parameterType="map">
+        INSERT INTO app_user (
+            user_id,
+            password_hash,
+            email,
+            role_code,
+            otp_enabled,
+            account_status
+        ) VALUES (
+            #{userId},
+            #{passwordHash},
+            #{email},
+            #{roleCode},
+            #{otpEnabled},
+            #{accountStatus}
+        )
+    </insert>
+
+    <insert id="ensureRandomLocalRule" parameterType="long">
+        INSERT INTO generation_rule (
+            user_seq,
+            day_of_week,
+            method_code,
+            generator_code,
+            set_count,
+            analysis_draw_count,
+            sort_order,
+            use_yn
+        )
+        SELECT
+            #{userSeq},
+            4,
+            'RANDOM',
+            'LOCAL',
+            5,
+            NULL,
+            1,
+            'Y'
+        FROM dual
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM generation_rule
+            WHERE user_seq = #{userSeq}
+              AND day_of_week = 4
+              AND method_code = 'RANDOM'
+              AND generator_code = 'LOCAL'
+              AND sort_order = 1
+        )
+    </insert>
+
+    <insert id="ensureHotClaudeRule" parameterType="long">
+        INSERT INTO generation_rule (
+            user_seq,
+            day_of_week,
+            method_code,
+            generator_code,
+            set_count,
+            analysis_draw_count,
+            sort_order,
+            use_yn
+        )
+        SELECT
+            #{userSeq},
+            4,
+            'HOT_NUMBER',
+            'CLAUDE',
+            5,
+            1000,
+            2,
+            'Y'
+        FROM dual
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM generation_rule
+            WHERE user_seq = #{userSeq}
+              AND day_of_week = 4
+              AND method_code = 'HOT_NUMBER'
+              AND generator_code = 'CLAUDE'
+              AND sort_order = 2
+        )
+    </insert>
+
+</mapper>

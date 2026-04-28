@@ -22,6 +22,13 @@
         ORDER BY day_of_week, sort_order, rule_id
     </select>
 
+    <select id="findUserSeqsByRuleDayOfWeek" parameterType="int" resultType="long">
+        SELECT DISTINCT user_seq
+        FROM generation_rule
+        WHERE day_of_week = #{dayOfWeek}
+          AND use_yn = 'Y'
+    </select>
+
     <select id="findRecentDrawResults" parameterType="int" resultType="map">
         SELECT result_id AS resultId,
                draw_no AS drawNo,
