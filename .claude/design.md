@@ -305,6 +305,8 @@
   - 운영 NGINX에서 정적 파일 서빙 및 `/api` 프록시를 위한 예시 설정
 - `scripts/build-deploy-bundle.sh`
   - 로컬에서 FE `dist`, BE `sattolux.jar`, 배포 스크립트/설정만 묶어 서버 업로드용 번들을 생성
+- `scripts/sync-prod-accounts.sh`
+  - 상용 DB(`SATTOLUX_DB`)에 `admin`, `ulmsaga` 계정과 기본 2개 룰을 동기화하는 스크립트
 
 | 테이블 | 설명 |
 |--------|------|

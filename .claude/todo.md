@@ -162,6 +162,7 @@
 - [ ] 서버 배포
   - [x] Spring Boot 운영 실행 스크립트 (`scripts/run-backend.sh`)
   - [x] 로컬 배포 번들 스크립트 (`scripts/build-deploy-bundle.sh`)
+  - [x] 상용 계정/룰 동기화 스크립트 (`scripts/sync-prod-accounts.sh`)
   - [x] systemd service 예시 파일 (`scripts/deploy/sattolux.service`)
   - [x] systemd 설치/기동 문서 (`scripts/deploy/README.md`)
   - [ ] NGINX 설정 (정적 파일 + `/api` → `:8081` 프록시)

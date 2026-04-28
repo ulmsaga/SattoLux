@@ -32,6 +32,7 @@ echo "[3/4] Copying deployment assets"
 cp -R "${FRONTEND_DIR}/dist" "${BUNDLE_DIR}/frontend/"
 cp "${BACKEND_DIR}/target/sattolux.jar" "${BUNDLE_DIR}/backend/target/"
 cp "${ROOT_DIR}/scripts/run-backend.sh" "${BUNDLE_DIR}/scripts/"
+cp "${ROOT_DIR}/scripts/sync-prod-accounts.sh" "${BUNDLE_DIR}/scripts/"
 cp "${DEPLOY_DIR}/README.md" "${DEPLOY_DIR}/sattolux.service" "${DEPLOY_DIR}/nginx-sattolux.conf" "${BUNDLE_DIR}/scripts/deploy/"
 
 cat > "${BUNDLE_DIR}/DEPLOY_ARTIFACTS.md" <<'EOF'
@@ -43,6 +44,7 @@ cat > "${BUNDLE_DIR}/DEPLOY_ARTIFACTS.md" <<'EOF'
 - `frontend/dist`
 - `backend/target/sattolux.jar`
 - `scripts/run-backend.sh`
+- `scripts/sync-prod-accounts.sh`
 - `scripts/deploy/README.md`
 - `scripts/deploy/sattolux.service`
 - `scripts/deploy/nginx-sattolux.conf`

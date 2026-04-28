@@ -55,6 +55,7 @@ whoami
 - NGINX 설정 원본: `/opt/sattolux/scripts/deploy/nginx-sattolux.conf`
 - 로컬 번들 스크립트: `scripts/build-deploy-bundle.sh`
 - 로컬 번들 출력 경로: `dist/deploy/`
+- 상용 계정/룰 동기화 스크립트: `scripts/sync-prod-accounts.sh`
 
 ---
 
@@ -130,6 +131,18 @@ chown eva:eva /opt/sattolux/.env
 - 운영에서는 `SPRING_SQL_INIT_MODE=never`
 - `.env`에 실제 비밀번호/시크릿을 넣고 git에는 올리지 않는다
 
+상용 계정/룰 동기화에 사용하는 값:
+
+```dotenv
+LOGIN_ADMIN=admin
+LOGIN_ADMIN_PW=change-me
+LOGIN_ADMIN_EMAIL=admin@sattolux.local
+
+LOGIN_USER=ulmsaga
+LOGIN_PW=change-me
+LOGIN_EMAIL=ulmsaga@sattolux.local
+```
+
 ---
 
 ## 6. 프론트 빌드
@@ -188,7 +201,35 @@ curl -sS http://127.0.0.1:8081/api/health
 
 ---
 
-## 9. systemd 서비스 등록
+## 9. 상용 계정/룰 동기화
+
+상용 DB에 `admin`, `ulmsaga` 계정과 기본 룰 2개를 보장하려면 아래 스크립트를 실행한다.
+
+```bash
+cd /opt/sattolux
+./scripts/sync-prod-accounts.sh --env-file /opt/sattolux/.env --database SATTOLUX_DB
+```
+
+동기화 대상:
+- `admin` (`ADMIN`)
+- `ulmsaga` (`USER`)
+
+각 계정에 보장되는 룰:
+- `RANDOM / LOCAL` 5세트
+- `HOT_NUMBER / CLAUDE` 5세트
+
+특징:
+- `schema`는 건드리지 않는다
+- `app_user`, `generation_rule`만 반영한다
+- 계정이 없으면 생성
+- 계정이 있으면 비밀번호/이메일/권한을 `.env` 기준으로 갱신
+- 각 사용자 `sort_order=1,2` 룰을 기본값으로 보장
+
+확인 예시는 작업 후 DB에서 별도로 조회하면 된다.
+
+---
+
+## 10. systemd 서비스 등록
 
 설치:
 
@@ -228,7 +269,7 @@ sudo systemctl start sattolux
 
 ---
 
-## 10. NGINX 설정
+## 11. NGINX 설정
 
 예시 파일:
 
@@ -259,7 +300,7 @@ curl -sS http://127.0.0.1/api/health
 
 ---
 
-## 11. 실제 배포 순서
+## 12. 실제 배포 순서
 
 처음 배포:
 
@@ -272,6 +313,7 @@ cd /opt/sattolux/backend
 ./mvnw -q -DskipTests package
 
 cd /opt/sattolux
+./scripts/sync-prod-accounts.sh --env-file /opt/sattolux/.env --database SATTOLUX_DB
 ./scripts/run-backend.sh --env-file /opt/sattolux/.env --profile prod --port 8081
 ```
 
@@ -289,7 +331,7 @@ sudo systemctl restart nginx
 
 ---
 
-## 12. 로컬에서 빌드 후 업로드하는 방식
+## 13. 로컬에서 빌드 후 업로드하는 방식
 
 로컬에서 서버 업로드용 파일만 묶으려면 아래 스크립트를 실행한다.
 
@@ -307,6 +349,7 @@ sudo systemctl restart nginx
 - `frontend/dist`
 - `backend/target/sattolux.jar`
 - `scripts/run-backend.sh`
+- `scripts/sync-prod-accounts.sh`
 - `scripts/deploy/README.md`
 - `scripts/deploy/sattolux.service`
 - `scripts/deploy/nginx-sattolux.conf`
@@ -315,7 +358,7 @@ sudo systemctl restart nginx
 
 ---
 
-## 13. 재배포 순서
+## 14. 재배포 순서
 
 소스 갱신 후:
 
@@ -326,13 +369,16 @@ npm run build
 cd /opt/sattolux/backend
 ./mvnw -q -DskipTests package
 
+cd /opt/sattolux
+./scripts/sync-prod-accounts.sh --env-file /opt/sattolux/.env --database SATTOLUX_DB
+
 sudo systemctl restart sattolux
 sudo systemctl restart nginx
 ```
 
 ---
 
-## 14. 장애 확인 포인트
+## 15. 장애 확인 포인트
 
 백엔드가 안 뜰 때:
 - `.env` 값 확인
@@ -351,12 +397,13 @@ API만 안 될 때:
 
 ---
 
-## 15. 배포 체크리스트
+## 16. 배포 체크리스트
 
 - [ ] `/opt/sattolux` 소유권이 `eva:eva`
 - [ ] `/var/log/sattolux` 소유권이 `eva:eva`
 - [ ] `/opt/sattolux/.env` 작성 완료
 - [ ] `/opt/sattolux/.env` 권한 `600`
+- [ ] `scripts/sync-prod-accounts.sh` 실행 완료
 - [ ] `frontend/dist` 생성 완료
 - [ ] `backend/target/sattolux.jar` 생성 완료
 - [ ] `curl http://127.0.0.1:8081/api/health` 정상
