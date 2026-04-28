@@ -7,16 +7,16 @@ INSERT INTO app_user (
     account_status
 )
 SELECT
-    '__LOGIN_USER__',
-    '__LOGIN_PW_HASH__',
-    '__LOGIN_EMAIL__',
+    '__LOGIN_ADMIN__',
+    '__LOGIN_ADMIN_PW_HASH__',
+    '__LOGIN_ADMIN_EMAIL__',
     'ADMIN',
     0,
     'ACTIVE'
 WHERE NOT EXISTS (
     SELECT 1
     FROM app_user
-    WHERE user_id = '__LOGIN_USER__'
+    WHERE user_id = '__LOGIN_ADMIN__'
 );
 
 INSERT INTO app_user (
@@ -28,16 +28,16 @@ INSERT INTO app_user (
     account_status
 )
 SELECT
-    '__GENERAL_LOGIN_USER__',
-    '__GENERAL_LOGIN_PW_HASH__',
-    '__GENERAL_LOGIN_EMAIL__',
+    '__LOGIN_USER__',
+    '__LOGIN_PW_HASH__',
+    '__LOGIN_EMAIL__',
     'USER',
     0,
     'ACTIVE'
 WHERE NOT EXISTS (
     SELECT 1
     FROM app_user
-    WHERE user_id = '__GENERAL_LOGIN_USER__'
+    WHERE user_id = '__LOGIN_USER__'
 );
 
 INSERT INTO generation_rule (
@@ -60,7 +60,7 @@ SELECT
     1,
     'Y'
 FROM app_user u
-WHERE u.user_id = '__LOGIN_USER__'
+WHERE u.user_id = '__LOGIN_ADMIN__'
   AND NOT EXISTS (
       SELECT 1
       FROM generation_rule gr
@@ -91,7 +91,7 @@ SELECT
     2,
     'Y'
 FROM app_user u
-WHERE u.user_id = '__LOGIN_USER__'
+WHERE u.user_id = '__LOGIN_ADMIN__'
   AND NOT EXISTS (
       SELECT 1
       FROM generation_rule gr
@@ -122,7 +122,7 @@ SELECT
     1,
     'Y'
 FROM app_user u
-WHERE u.user_id = '__GENERAL_LOGIN_USER__'
+WHERE u.user_id = '__LOGIN_USER__'
   AND NOT EXISTS (
       SELECT 1
       FROM generation_rule gr
@@ -153,7 +153,7 @@ SELECT
     2,
     'Y'
 FROM app_user u
-WHERE u.user_id = '__GENERAL_LOGIN_USER__'
+WHERE u.user_id = '__LOGIN_USER__'
   AND NOT EXISTS (
       SELECT 1
       FROM generation_rule gr

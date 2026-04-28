@@ -21,6 +21,11 @@ public class DevAdminDaoImpl implements DevAdminDao {
     }
 
     @Override
+    public void updateUser(Map<String, Object> params) {
+        sql.update(NS + "updateUser", params);
+    }
+
+    @Override
     public void ensureRandomLocalRule(Long userSeq) {
         sql.insert(NS + "ensureRandomLocalRule", userSeq);
     }

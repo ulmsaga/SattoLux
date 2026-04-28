@@ -22,6 +22,16 @@
         )
     </insert>
 
+    <update id="updateUser" parameterType="map">
+        UPDATE app_user
+        SET password_hash = #{passwordHash},
+            email = #{email},
+            role_code = #{roleCode},
+            otp_enabled = #{otpEnabled},
+            account_status = #{accountStatus}
+        WHERE user_seq = #{userSeq}
+    </update>
+
     <insert id="ensureRandomLocalRule" parameterType="long">
         INSERT INTO generation_rule (
             user_seq,

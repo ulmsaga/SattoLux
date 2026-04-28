@@ -68,12 +68,12 @@ if [[ -z "${DB_URL:-}" || -z "${DB_USER:-}" || -z "${DB_PASSWORD:-}" ]]; then
 fi
 
 if [[ "${APPLY_DEV_SEED}" == "true" ]]; then
-    if [[ -z "${LOGIN_USER:-}" || -z "${LOGIN_PW:-}" ]]; then
-        echo "LOGIN_USER, LOGIN_PW must be defined in .env when using --with-dev-seed" >&2
+    if [[ -z "${LOGIN_ADMIN:-}" || -z "${LOGIN_ADMIN_PW:-}" ]]; then
+        echo "LOGIN_ADMIN, LOGIN_ADMIN_PW must be defined in .env when using --with-dev-seed" >&2
         exit 1
     fi
-    if [[ -z "${GENERAL_LOGIN_PW:-}" ]]; then
-        echo "GENERAL_LOGIN_PW must be defined in .env when using --with-dev-seed" >&2
+    if [[ -z "${LOGIN_USER:-}" || -z "${LOGIN_PW:-}" ]]; then
+        echo "LOGIN_USER, LOGIN_PW must be defined in .env when using --with-dev-seed" >&2
         exit 1
     fi
 fi
@@ -123,29 +123,29 @@ build_dev_seed_file() {
         exit 1
     fi
 
+    local login_admin login_admin_password_hash login_admin_email escaped_admin_user escaped_admin_hash escaped_admin_email
     local login_user password_hash login_email escaped_user escaped_hash escaped_email
-    local general_login_user general_password_hash general_login_email escaped_general_user escaped_general_hash escaped_general_email
+    login_admin="${LOGIN_ADMIN}"
+    login_admin_password_hash="$(htpasswd -bnBC 10 "" "${LOGIN_ADMIN_PW}" | tr -d ':\n')"
+    login_admin_email="${LOGIN_ADMIN_EMAIL:-${login_admin}@sattolux.local}"
     login_user="${LOGIN_USER}"
     password_hash="$(htpasswd -bnBC 10 "" "${LOGIN_PW}" | tr -d ':\n')"
     login_email="${LOGIN_EMAIL:-${login_user}@sattolux.local}"
-    general_login_user="${GENERAL_LOGIN_USER:-${login_user}_user}"
-    general_password_hash="$(htpasswd -bnBC 10 "" "${GENERAL_LOGIN_PW}" | tr -d ':\n')"
-    general_login_email="${GENERAL_LOGIN_EMAIL:-${general_login_user}@sattolux.local}"
+    escaped_admin_user="$(sed_escape_replacement "$(sql_escape "${login_admin}")")"
+    escaped_admin_hash="$(sed_escape_replacement "$(sql_escape "${login_admin_password_hash}")")"
+    escaped_admin_email="$(sed_escape_replacement "$(sql_escape "${login_admin_email}")")"
     escaped_user="$(sed_escape_replacement "$(sql_escape "${login_user}")")"
     escaped_hash="$(sed_escape_replacement "$(sql_escape "${password_hash}")")"
     escaped_email="$(sed_escape_replacement "$(sql_escape "${login_email}")")"
-    escaped_general_user="$(sed_escape_replacement "$(sql_escape "${general_login_user}")")"
-    escaped_general_hash="$(sed_escape_replacement "$(sql_escape "${general_password_hash}")")"
-    escaped_general_email="$(sed_escape_replacement "$(sql_escape "${general_login_email}")")"
 
     TEMP_DEV_SEED_FILE="$(mktemp)"
     sed \
+        -e "s|__LOGIN_ADMIN__|${escaped_admin_user}|g" \
+        -e "s|__LOGIN_ADMIN_PW_HASH__|${escaped_admin_hash}|g" \
+        -e "s|__LOGIN_ADMIN_EMAIL__|${escaped_admin_email}|g" \
         -e "s|__LOGIN_USER__|${escaped_user}|g" \
         -e "s|__LOGIN_PW_HASH__|${escaped_hash}|g" \
         -e "s|__LOGIN_EMAIL__|${escaped_email}|g" \
-        -e "s|__GENERAL_LOGIN_USER__|${escaped_general_user}|g" \
-        -e "s|__GENERAL_LOGIN_PW_HASH__|${escaped_general_hash}|g" \
-        -e "s|__GENERAL_LOGIN_EMAIL__|${escaped_general_email}|g" \
         "${DEV_SEED_FILE}" > "${TEMP_DEV_SEED_FILE}"
 }
 

@@ -4,6 +4,7 @@ import LoginLayer from '@/layouts/LoginLayer'
 import MainLayer from '@/layouts/MainLayer'
 import LoginPage from '@/pages/LoginPage'
 import MakeWeekNumPage from '@/pages/MakeWeekNumPage'
+import MarkingSlipPage from '@/pages/MarkingSlipPage'
 import ResultPage from '@/pages/ResultPage'
 import SettingsPage from '@/pages/SettingsPage'
 
@@ -40,6 +41,7 @@ export default function App() {
           <Route element={<RequireAuth><MainLayer /></RequireAuth>}>
             <Route index element={<Navigate to="/make-week-num" replace />} />
             <Route path="/make-week-num" element={<MakeWeekNumPage />} />
+            <Route path="/marking-slip" element={<MarkingSlipPage />} />
             <Route path="/result" element={<ResultPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>

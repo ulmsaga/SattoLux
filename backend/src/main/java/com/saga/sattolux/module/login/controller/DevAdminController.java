@@ -1,6 +1,7 @@
 package com.saga.sattolux.module.login.controller;
 
 import com.saga.sattolux.module.login.dto.DevUserEnsureResponse;
+import com.saga.sattolux.module.login.dto.DevLoginAccountSyncResponse;
 import com.saga.sattolux.module.login.service.DevAdminService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -25,6 +26,12 @@ public class DevAdminController {
     public ResponseEntity<DevUserEnsureResponse> ensureGeneralUser(Authentication authentication) {
         requireAdmin(authentication);
         return ResponseEntity.ok(devAdminService.ensureGeneralUser());
+    }
+
+    @PostMapping("/sync-login-accounts")
+    public ResponseEntity<DevLoginAccountSyncResponse> syncLoginAccounts(Authentication authentication) {
+        requireAdmin(authentication);
+        return ResponseEntity.ok(devAdminService.syncLoginAccounts());
     }
 
     private void requireAdmin(Authentication authentication) {

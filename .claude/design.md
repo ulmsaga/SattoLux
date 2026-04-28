@@ -10,14 +10,14 @@
 | MySQL | Docker (`SATTOLUX_DB` / `SATTOLUX_DEV_DB`), user: `sattolux`) |
 | Mailpit | Docker, `http://ulmsaga34.cafe24.com:8025` |
 | Node | 16 (OS 한계) |
-| 도메인 | ulmsaga34.cafe24.com:8080 |
+| 도메인 | ulmsaga34.cafe24.com |
 
 ## 포트 구성
 
 | 환경 | FE | BE |
 |------|----|----|
 | 로컬 | 8080 | 8081 |
-| 서버 | NGINX :8080 (외부 노출) | Spring Boot :8081 (내부 only) |
+| 서버 | NGINX :80 (외부 노출) | Spring Boot :8081 (내부 only) |
 
 - NGINX `/api` → `localhost:8081` 프록시 (BE는 외부 미노출)
 - 개발/상용 DB 분리: 환경변수 `DB_URL` 하나로 전환 (`SATTOLUX_DEV_DB` ↔ `SATTOLUX_DB`)
@@ -30,7 +30,7 @@
 ```
 [사용자 브라우저]
       ↓
-  [NGINX :8080]          ← ulmsaga34.cafe24.com:8080
+  [NGINX :80]            ← ulmsaga34.cafe24.com
       ↓ (정적 파일 / API 프록시)
   [React SPA]  →  [Spring Boot API :8081]  →  [MySQL (Docker)]
                           ↓
@@ -65,6 +65,38 @@
 - 수동 생성은 "자동 생성 실패 복구" 목적의 보조 수단으로 사용
 - 자동 생성 시각 이전에는 수동 생성 버튼을 기본 비활성 상태로 둠
 - 운영자가 스케줄 시각을 변경하더라도 FE/BE 판단 기준은 동일한 properties 값 사용
+
+### 마킹 보기 화면 흐름
+```
+번호 생성 화면
+  → "마킹 보기" 버튼 클릭
+  → 현재 주차 satto_number_set 조회
+  → 5세트 단위로 1장으로 묶음
+  → 각 세트는 A~E 슬롯 중 1개에 대응
+  → 한 화면에는 한 세트만 표시
+  → 좌우 스와이프로 다음/이전 세트 이동
+```
+
+- 세트 매핑 규칙
+  - 1세트: `1장 A`
+  - 2세트: `1장 B`
+  - 3세트: `1장 C`
+  - 4세트: `1장 D`
+  - 5세트: `1장 E`
+  - 6세트: `2장 A`
+  - 10세트: `2장 E`
+- 이동 규칙
+  - `1장 E` 다음은 `2장 A`
+  - `2장 A`에서 이전은 `1장 E`
+  - 사용자는 "장 이동"이 아니라 "세트 연속 이동"으로 인지하게 설계
+- 표시 요소
+  - 상단: `n장`, `A~E 구역`, `현재 세트 / 전체 세트`
+  - 본문: 실제 로또 용지와 유사한 1~45 번호 그리드
+  - 선택 번호는 마킹된 상태로 강조
+  - 하단: `자동` 표기
+- 입력 방식
+  - 모바일: 좌우 드래그
+  - 데스크탑: 이전/다음 버튼, 필요 시 키보드 좌우 이동
 
 ### 현재 구현된 백엔드 API
 - `GET /api/make-week-num/rules`
@@ -262,6 +294,15 @@
   - `SATTOLUX_DEV_DB`, `SATTOLUX_DB`에 동일한 추첨 결과 upsert
   - 기본값은 DEV DB 마지막 저장 회차 다음부터 최신 회차까지 동기화
   - 좁은 검증 시 `--from`, `--to`로 회차 범위 지정 가능
+- `backend/src/main/resources/application-scheduler-test.yml`
+  - `scheduler-test` 프로필에서 결과 수집 cron을 `10초` 간격으로 단축
+  - 토요일 실시간 대기 없이 스케줄러 기동 여부를 빠르게 검증할 때 사용
+- `scripts/deploy/sattolux.service`
+  - 운영 Linux 서버에서 Spring Boot 백엔드를 systemd로 상시 구동하기 위한 서비스 파일 예시
+- `scripts/deploy/README.md`
+  - 운영 배포 기준 `.env`, 빌드, systemd 설치/기동 절차 문서
+- `scripts/deploy/nginx-sattolux.conf`
+  - 운영 NGINX에서 정적 파일 서빙 및 `/api` 프록시를 위한 예시 설정
 
 | 테이블 | 설명 |
 |--------|------|

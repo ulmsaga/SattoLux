@@ -1,0 +1,11 @@
+spring:
+  config:
+    activate:
+      on-profile: scheduler-test
+
+satto:
+  result:
+    scheduler:
+      saturday-cron: "*/10 * * * * *"
+      sunday-midnight-cron: "0 0 0 * * SUN"
+      sunday-morning-cron: "0 0 9 * * SUN"

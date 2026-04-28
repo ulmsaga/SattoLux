@@ -61,6 +61,12 @@ public class ResultServiceImpl implements ResultService {
         while (true) {
             DrawResultPayload payload = fetchDrawResult(candidateDrawNo);
             if (payload == null) {
+                if (savedCount == 0) {
+                    log.info("No new draw result available. latestSavedDrawNo={}, nextCandidateDrawNo={}", latestSavedDrawNo, candidateDrawNo);
+                } else {
+                    log.info("Result collection stopped after saving new results. latestSavedDrawNo={}, lastSavedCount={}, nextCandidateDrawNo={}",
+                            latestSavedDrawNo, savedCount, candidateDrawNo);
+                }
                 break;
             }
 

@@ -14,6 +14,10 @@
   - `HOT_NUMBER / CLAUDE` 생성 성공
   - `MIXED`는 현재 범위 제외, 차기 업그레이드 예정
 - 번호 생성 화면 / 설정 화면 구현 완료
+- 마킹 보기 화면 설계 확정
+  - `5세트 = 1장`
+  - `한 화면 = 한 구역`
+  - `1장 E → 2장 A` 연속 스와이프
 - 자동 생성 스케줄러 / 수동 생성 가능 조건 구현 완료
 - 결과/알림 기능 1차 구현 완료
   - 결과 수집 스케줄러
@@ -102,6 +106,7 @@
 - [x] 스케줄러 시각 properties 관리 (초기값: 오전 9시)
 - [x] 자동 생성 누락 시 수동 생성 활성 조건 정의/구현
 - [x] 번호 조회 화면 (S02)
+- [x] 마킹 보기 화면 (S02-1)
 
 ## Phase 5. 핵심 기능 — 결과 비교
 
@@ -109,7 +114,7 @@
 - [x] 결과 수집 스케줄러 (토요일 21:00~23:00, 5분 간격 폴링)
   - [x] DB에 해당 회차 결과가 이미 있으면 즉시 종료
   - [x] 결과 미오픈 시 skip
-  - [ ] 일요일 보정 수집 추가 (`00:00`, `09:00`)
+  - [x] 일요일 보정 수집 추가 (`00:00`, `09:00`)
 - [x] 세트 vs 결과 비교 로직
 - [x] 결과 화면 (S03)
 - [x] 결과 도착 알림 생성 (DB 저장 + unread 관리)
@@ -124,9 +129,9 @@
   - [x] 최신 결과 API 조회 후 지난주 세트와 비교
   - [ ] 결과 화면 / 알림 / SSE까지 함께 검증
 - [ ] 스케줄러 테스트 전략 반영
-  - [ ] local/test 전용 짧은 cron 구성
-  - [ ] 스케줄러 실행 로그 / savedCount / skip reason 확인
-  - [ ] 시간 판정 정책 단위 테스트 추가
+  - [x] local/test 전용 짧은 cron 구성 (`scheduler-test`, 10초 간격)
+  - [x] 스케줄러 실행 로그 / savedCount / skip reason 보강
+  - [x] 시간 판정 정책 단위 테스트 추가
 
 ## Phase 6. Noti (옵션)
 
@@ -155,8 +160,11 @@
 
 - [ ] 에러 코드 정리 (`errors.md`)
 - [ ] 서버 배포
+  - [x] Spring Boot 운영 실행 스크립트 (`scripts/run-backend.sh`)
+  - [x] systemd service 예시 파일 (`scripts/deploy/sattolux.service`)
+  - [x] systemd 설치/기동 문서 (`scripts/deploy/README.md`)
   - [ ] NGINX 설정 (정적 파일 + `/api` → `:8081` 프록시)
   - [ ] Mailpit Docker 설치 (`http://ulmsaga34.cafe24.com:8025`)
   - [ ] OS 환경변수 등록 (DB, LLM API Key 등)
   - [ ] Spring Boot jar 배포 (:8081, 외부 미노출)
-  - [ ] 도메인 연결 확인 (ulmsaga34.cafe24.com:8080)
+  - [ ] 도메인 연결 확인 (http://ulmsaga34.cafe24.com)

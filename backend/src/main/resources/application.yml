@@ -1,5 +1,5 @@
 server:
-  port: 8081
+  port: ${SERVER_PORT:8081}
 
 spring:
   application:
@@ -8,7 +8,7 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:dev}
   sql:
     init:
-      mode: always
+      mode: ${SPRING_SQL_INIT_MODE:always}
       schema-locations: classpath:db/schema.sql
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -29,7 +29,7 @@ mybatis:
 # AI (Anthropic Claude)
 ai:
   claude:
-    api-key: ${CLAUDE_API_KEY}
+    api-key: ${CLAUDE_API_KEY:}
     model: claude-haiku-4-5-20251001
     base-url: https://api.anthropic.com
 
@@ -37,9 +37,11 @@ ai:
 spring.mail:
   host: ${MAIL_HOST:ulmsaga34.cafe24.com}
   port: ${MAIL_PORT:1025}
+  username: ${MAIL_USERNAME:}
+  password: ${MAIL_PASSWORD:}
   properties:
-    mail.smtp.auth: false
-    mail.smtp.starttls.enable: false
+    mail.smtp.auth: ${MAIL_SMTP_AUTH:false}
+    mail.smtp.starttls.enable: ${MAIL_SMTP_STARTTLS:false}
 
 # Satto 결과 API (동행복권)
 satto:
@@ -47,7 +49,9 @@ satto:
   result-referer: https://www.dhlottery.co.kr/lt645/result
   result:
     scheduler:
-      cron: "0 */5 21-23 * * SAT"
+      saturday-cron: "0 */5 21-23 * * SAT"
+      sunday-midnight-cron: "0 0 0 * * SUN"
+      sunday-morning-cron: "0 0 9 * * SUN"
   generation:
     scheduler:
       time: 09:00

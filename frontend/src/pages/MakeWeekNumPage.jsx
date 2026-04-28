@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { AlertCircle, CalendarDays, Cpu, Loader2, RefreshCcw, Sparkles, Wand2 } from 'lucide-react'
+import { AlertCircle, CalendarDays, Cpu, Loader2, RefreshCcw, Sparkles, Ticket, Wand2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
+import NumberBall from '@/components/NumberBall'
 import { cn } from '@/lib/utils'
 import {
   generateManualCurrentWeekNumbers,
@@ -85,20 +87,8 @@ function groupSetsByRule(sets) {
   })
 }
 
-function NumberBall({ value, accent = false }) {
-  return (
-    <span
-      className={cn(
-        'flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold shadow-sm',
-        accent ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-200'
-      )}
-    >
-      {value}
-    </span>
-  )
-}
-
 export default function MakeWeekNumPage() {
+  const navigate = useNavigate()
   const requestSeqRef = useRef(0)
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -252,12 +242,25 @@ export default function MakeWeekNumPage() {
             {refreshing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCcw className="mr-2 h-4 w-4" />}
             새로고침
           </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => navigate('/marking-slip')}
+            disabled={numberSets.length === 0}
+            className="h-11 rounded-xl border border-white/15 bg-white/5 text-white hover:bg-white/10"
+          >
+            <Ticket className="mr-2 h-4 w-4" />
+            마킹 보기
+          </Button>
         </div>
 
         <div className="mt-4 rounded-2xl bg-white/8 px-4 py-3 ring-1 ring-white/10">
           <p className="text-xs uppercase tracking-[0.2em] text-slate-400">수동 생성 상태</p>
           <p className="mt-2 text-sm text-slate-100">
             {manualAvailable ? '자동 생성 누락 상태입니다. 수동 생성 버튼을 사용할 수 있습니다.' : manualReason}
+          </p>
+          <p className="mt-2 text-xs text-slate-400">
+            번호 색상은 구간을 뜻하고, 이중 링은 강조 번호를 의미합니다.
           </p>
         </div>
       </section>
@@ -377,7 +380,7 @@ export default function MakeWeekNumPage() {
                         <NumberBall
                           key={`${set.setId}-${number}`}
                           value={number}
-                          accent={group.generatorCode === 'CLAUDE' && numberIndex < 2}
+                          emphasized={group.generatorCode === 'CLAUDE' && numberIndex < 2}
                         />
                       ))}
                     </div>

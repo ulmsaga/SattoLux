@@ -1,0 +1,22 @@
+[Unit]
+Description=SattoLux Spring Boot Backend
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=eva
+Group=eva
+WorkingDirectory=/opt/sattolux
+EnvironmentFile=/opt/sattolux/.env
+ExecStart=/opt/sattolux/scripts/run-backend.sh --env-file /opt/sattolux/.env --profile prod --port 8081
+SuccessExitStatus=143
+Restart=always
+RestartSec=5
+TimeoutStartSec=120
+TimeoutStopSec=30
+StandardOutput=append:/var/log/sattolux/backend.log
+StandardError=append:/var/log/sattolux/backend.log
+
+[Install]
+WantedBy=multi-user.target

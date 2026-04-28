@@ -67,6 +67,7 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
         List<Map<String, Object>> activeRules = makeWeekNumDao.findActiveRules(userSeq);
         List<SattoNumberSetResponse> generatedSets = new ArrayList<>();
         List<SkippedRuleResponse> skippedRules = new ArrayList<>();
+        Set<String> usedSetKeys = new HashSet<>();
 
         for (Map<String, Object> rule : activeRules) {
             Long ruleId = getLong(rule, "ruleId");
@@ -78,11 +79,15 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
                 continue;
             }
 
-            RuleGenerationOutcome outcome = generateRuleSets(rule);
+            RuleGenerationOutcome outcome = generateRuleSets(rule, usedSetKeys);
             if (outcome.skippedReason() != null) {
                 skippedRules.add(new SkippedRuleResponse(ruleId, methodCode, generatorCode, outcome.skippedReason()));
                 continue;
             }
+
+            outcome.generatedSets().stream()
+                    .map(generatedSet -> toSetKey(generatedSet.numbers()))
+                    .forEach(usedSetKeys::add);
 
             makeWeekNumDao.deleteNumberSetsForRuleScope(userSeq, ruleId, targetYear, targetMonth, targetWeekOfMonth);
             for (GeneratedSet generatedSet : outcome.generatedSets()) {
@@ -262,17 +267,17 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
         return null;
     }
 
-    private RuleGenerationOutcome generateRuleSets(Map<String, Object> rule) {
+    private RuleGenerationOutcome generateRuleSets(Map<String, Object> rule, Set<String> reservedSetKeys) {
         String methodCode = getString(rule, "methodCode");
         String generatorCode = getString(rule, "generatorCode");
         int setCount = getInt(rule, "setCount");
 
         if ("RANDOM".equals(methodCode) && "LOCAL".equals(generatorCode)) {
-            return new RuleGenerationOutcome(generateRandomSetBatch(setCount), null);
+            return new RuleGenerationOutcome(generateRandomSetBatch(setCount, reservedSetKeys), null);
         }
 
         if ("HOT_NUMBER".equals(methodCode)) {
-            return generateHotNumberRule(rule, setCount);
+            return generateHotNumberRule(rule, setCount, reservedSetKeys);
         }
 
         if ("MIXED".equals(methodCode)) {
@@ -282,7 +287,7 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
         return new RuleGenerationOutcome(List.of(), "지원하지 않는 생성 규칙입니다.");
     }
 
-    private RuleGenerationOutcome generateHotNumberRule(Map<String, Object> rule, int setCount) {
+    private RuleGenerationOutcome generateHotNumberRule(Map<String, Object> rule, int setCount, Set<String> reservedSetKeys) {
         Integer analysisDrawCount = rowIntOrNull(rule, "analysisDrawCount");
         int targetDrawCount = analysisDrawCount == null || analysisDrawCount < 1 ? 100 : analysisDrawCount;
         List<Map<String, Object>> recentDraws = makeWeekNumDao.findRecentDrawResults(targetDrawCount);
@@ -320,13 +325,14 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
                     generationResult.sets(),
                     getString(rule, "methodCode"),
                     getString(rule, "generatorCode"),
-                    setCount
+                    setCount,
+                    reservedSetKeys
             );
             return new RuleGenerationOutcome(generatedSets, null);
         } catch (Exception e) {
             log.warn("HOT_NUMBER generation failed for ruleId={}, fallback to LOCAL engine.",
                     getLong(rule, "ruleId"), e);
-            return new RuleGenerationOutcome(generateLocalHotNumberSetBatch(setCount, frequencyMap), null);
+            return new RuleGenerationOutcome(generateLocalHotNumberSetBatch(setCount, frequencyMap, reservedSetKeys), null);
         }
     }
 
@@ -360,16 +366,17 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
     private List<GeneratedSet> validateGeneratedSets(List<List<Integer>> rawSets,
                                                      String methodCode,
                                                      String generatorCode,
-                                                     int expectedSetCount) {
+                                                     int expectedSetCount,
+                                                     Set<String> reservedSetKeys) {
         if (rawSets == null || rawSets.size() != expectedSetCount) {
             throw new IllegalStateException("Unexpected number of generated sets.");
         }
 
-        Set<String> uniqueSetKeys = new HashSet<>();
+        Set<String> uniqueSetKeys = new HashSet<>(reservedSetKeys);
         List<GeneratedSet> validatedSets = new ArrayList<>();
         for (List<Integer> rawSet : rawSets) {
             List<Integer> numbers = normalizeNumbers(rawSet);
-            String setKey = numbers.stream().map(String::valueOf).collect(Collectors.joining(","));
+            String setKey = toSetKey(numbers);
             if (!uniqueSetKeys.add(setKey)) {
                 throw new IllegalStateException("Duplicate number set detected.");
             }
@@ -378,20 +385,37 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
         return validatedSets;
     }
 
-    private List<GeneratedSet> generateRandomSetBatch(int setCount) {
+    private List<GeneratedSet> generateRandomSetBatch(int setCount, Set<String> reservedSetKeys) {
         List<GeneratedSet> generatedSets = new ArrayList<>();
+        Set<String> uniqueSetKeys = new HashSet<>(reservedSetKeys);
         for (int i = 0; i < setCount; i++) {
-            generatedSets.add(new GeneratedSet(generateRandomNumbers(), "RANDOM", "LOCAL"));
+            List<Integer> numbers = generateUniqueNumbers(uniqueSetKeys, this::generateRandomNumbers);
+            generatedSets.add(new GeneratedSet(numbers, "RANDOM", "LOCAL"));
         }
         return generatedSets;
     }
 
-    private List<GeneratedSet> generateLocalHotNumberSetBatch(int setCount, Map<Integer, Integer> frequencyMap) {
+    private List<GeneratedSet> generateLocalHotNumberSetBatch(int setCount,
+                                                              Map<Integer, Integer> frequencyMap,
+                                                              Set<String> reservedSetKeys) {
         List<GeneratedSet> generatedSets = new ArrayList<>();
+        Set<String> uniqueSetKeys = new HashSet<>(reservedSetKeys);
         for (int i = 0; i < setCount; i++) {
-            generatedSets.add(new GeneratedSet(generateHotNumbers(frequencyMap), "HOT_NUMBER", "LOCAL"));
+            List<Integer> numbers = generateUniqueNumbers(uniqueSetKeys, () -> generateHotNumbers(frequencyMap));
+            generatedSets.add(new GeneratedSet(numbers, "HOT_NUMBER", "LOCAL"));
         }
         return generatedSets;
+    }
+
+    private List<Integer> generateUniqueNumbers(Set<String> uniqueSetKeys, NumberSupplier supplier) {
+        for (int attempt = 0; attempt < 10_000; attempt++) {
+            List<Integer> numbers = supplier.get();
+            String setKey = toSetKey(numbers);
+            if (uniqueSetKeys.add(setKey)) {
+                return numbers;
+            }
+        }
+        throw new IllegalStateException("Failed to generate a unique number set.");
     }
 
     private List<Integer> generateRandomNumbers() {
@@ -454,6 +478,10 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
 
         Collections.sort(numbers);
         return numbers;
+    }
+
+    private String toSetKey(List<Integer> numbers) {
+        return numbers.stream().map(String::valueOf).collect(Collectors.joining(","));
     }
 
     private GenerationRuleResponse toRuleResponse(Map<String, Object> row) {
@@ -530,6 +558,11 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
     }
 
     private record RuleGenerationOutcome(List<GeneratedSet> generatedSets, String skippedReason) {
+    }
+
+    @FunctionalInterface
+    private interface NumberSupplier {
+        List<Integer> get();
     }
 
     private record WeekStatus(int targetYear,

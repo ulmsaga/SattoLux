@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { BarChart2, BellRing, Loader2, Sparkles, RefreshCcw, Trophy } from 'lucide-react'
+import NumberBall from '@/components/NumberBall'
 import { replayResultReadyNotification } from '@/api/notifications'
 import { getWeekResult, prepareLatestResultManualTest, runLatestResultManualTest } from '@/api/result'
 import { useAuth } from '@/context/AuthContext'
@@ -20,21 +21,6 @@ const RANK_TONE = {
   3: 'bg-orange-100 text-orange-800 ring-orange-200',
   4: 'bg-emerald-100 text-emerald-800 ring-emerald-200',
   5: 'bg-sky-100 text-sky-800 ring-sky-200',
-}
-
-function NumberBall({ value, highlight = false, bonus = false }) {
-  return (
-    <span
-      className={cn(
-        'flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold shadow-sm ring-1',
-        bonus && 'bg-amber-400 text-slate-950 ring-amber-300',
-        !bonus && highlight && 'bg-slate-900 text-white ring-slate-900',
-        !bonus && !highlight && 'bg-white text-slate-700 ring-slate-200'
-      )}
-    >
-      {value}
-    </span>
-  )
 }
 
 export default function ResultPage() {
@@ -219,10 +205,11 @@ export default function ResultPage() {
               <p className="text-xs uppercase tracking-[0.2em] text-slate-400">당첨 번호</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(result.winningNumbers ?? []).map((number) => (
-                  <NumberBall key={`win-${number}`} value={number} highlight />
+                  <NumberBall key={`win-${number}`} value={number} emphasized />
                 ))}
                 {result.bonusNo != null && <NumberBall value={result.bonusNo} bonus />}
               </div>
+              <p className="mt-3 text-xs text-slate-300">색상은 번호 구간, 이중 링은 강조 번호를 뜻합니다.</p>
             </div>
           </div>
         ) : (
@@ -284,7 +271,7 @@ export default function ResultPage() {
 
               <div className="mt-3 flex flex-wrap gap-2">
                 {item.numbers.map((number) => (
-                  <NumberBall key={`${item.setId}-${number}`} value={number} highlight={result?.winningNumbers?.includes(number)} />
+                  <NumberBall key={`${item.setId}-${number}`} value={number} emphasized={result?.winningNumbers?.includes(number)} />
                 ))}
               </div>
 
