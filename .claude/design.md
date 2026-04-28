@@ -303,6 +303,8 @@
   - 운영 배포 기준 `.env`, 빌드, systemd 설치/기동 절차 문서
 - `scripts/deploy/nginx-sattolux.conf`
   - 운영 NGINX에서 정적 파일 서빙 및 `/api` 프록시를 위한 예시 설정
+- `scripts/build-deploy-bundle.sh`
+  - 로컬에서 FE `dist`, BE `sattolux.jar`, 배포 스크립트/설정만 묶어 서버 업로드용 번들을 생성
 
 | 테이블 | 설명 |
 |--------|------|

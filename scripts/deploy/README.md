@@ -48,11 +48,13 @@ whoami
 ## 3. 배포 파일 위치
 
 - 앱 루트: `/opt/sattolux`
-- 백엔드 jar: `/opt/sattolux/backend/target/sattolux-0.0.1-SNAPSHOT.jar`
+- 백엔드 jar: `/opt/sattolux/backend/target/sattolux.jar`
 - 환경변수 파일: `/opt/sattolux/.env`
 - systemd 파일 원본: `/opt/sattolux/scripts/deploy/sattolux.service`
 - systemd 설치 위치: `/etc/systemd/system/sattolux.service`
 - NGINX 설정 원본: `/opt/sattolux/scripts/deploy/nginx-sattolux.conf`
+- 로컬 번들 스크립트: `scripts/build-deploy-bundle.sh`
+- 로컬 번들 출력 경로: `dist/deploy/`
 
 ---
 
@@ -156,7 +158,7 @@ cd /opt/sattolux/backend
 jar 확인:
 
 ```bash
-ls -l /opt/sattolux/backend/target/sattolux-0.0.1-SNAPSHOT.jar
+ls -l /opt/sattolux/backend/target/sattolux.jar
 ```
 
 ---
@@ -287,7 +289,33 @@ sudo systemctl restart nginx
 
 ---
 
-## 12. 재배포 순서
+## 12. 로컬에서 빌드 후 업로드하는 방식
+
+로컬에서 서버 업로드용 파일만 묶으려면 아래 스크립트를 실행한다.
+
+```bash
+./scripts/build-deploy-bundle.sh
+```
+
+생성 결과:
+
+- 디렉터리: `dist/deploy/sattolux-deploy-YYYYMMDD-HHMMSS/`
+- 압축 파일: `dist/deploy/sattolux-deploy-YYYYMMDD-HHMMSS.tar.gz`
+
+번들 포함 항목:
+
+- `frontend/dist`
+- `backend/target/sattolux.jar`
+- `scripts/run-backend.sh`
+- `scripts/deploy/README.md`
+- `scripts/deploy/sattolux.service`
+- `scripts/deploy/nginx-sattolux.conf`
+
+서버에는 이 번들을 풀고 문서 순서대로 적용하면 된다.
+
+---
+
+## 13. 재배포 순서
 
 소스 갱신 후:
 
@@ -304,7 +332,7 @@ sudo systemctl restart nginx
 
 ---
 
-## 13. 장애 확인 포인트
+## 14. 장애 확인 포인트
 
 백엔드가 안 뜰 때:
 - `.env` 값 확인
@@ -323,14 +351,14 @@ API만 안 될 때:
 
 ---
 
-## 14. 배포 체크리스트
+## 15. 배포 체크리스트
 
 - [ ] `/opt/sattolux` 소유권이 `eva:eva`
 - [ ] `/var/log/sattolux` 소유권이 `eva:eva`
 - [ ] `/opt/sattolux/.env` 작성 완료
 - [ ] `/opt/sattolux/.env` 권한 `600`
 - [ ] `frontend/dist` 생성 완료
-- [ ] `backend/target/*.jar` 생성 완료
+- [ ] `backend/target/sattolux.jar` 생성 완료
 - [ ] `curl http://127.0.0.1:8081/api/health` 정상
 - [ ] `systemctl status sattolux` 정상
 - [ ] `nginx -t` 정상

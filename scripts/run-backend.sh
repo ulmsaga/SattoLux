@@ -4,7 +4,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BACKEND_DIR="${ROOT_DIR}/backend"
-DEFAULT_JAR="${BACKEND_DIR}/target/sattolux-0.0.1-SNAPSHOT.jar"
+DEFAULT_JAR="${BACKEND_DIR}/target/sattolux.jar"
 DEFAULT_ENV_FILE="${ROOT_DIR}/.env"
 DEFAULT_LOG_FILE="${BACKEND_DIR}/logs/sattolux.log"
 DEFAULT_PID_FILE="${BACKEND_DIR}/run/sattolux.pid"
@@ -26,7 +26,7 @@ Usage: scripts/run-backend.sh [options] [-- <spring-args...>]
 
 Options:
   --env-file FILE     Load environment variables from FILE (default: .env)
-  --jar FILE          Spring Boot jar path (default: backend/target/sattolux-0.0.1-SNAPSHOT.jar)
+  --jar FILE          Spring Boot jar path (default: backend/target/sattolux.jar)
   --profile PROFILE   spring profile override (default: SPRING_PROFILES_ACTIVE or prod)
   --port PORT         server.port override (default: SERVER_PORT or 8081)
   --java-opts OPTS    Extra JVM options string
