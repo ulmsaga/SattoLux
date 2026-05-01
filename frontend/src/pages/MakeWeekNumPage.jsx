@@ -340,7 +340,7 @@ export default function MakeWeekNumPage() {
             <h2 className="text-lg font-semibold text-slate-900">이번 주 생성 번호</h2>
             <p className="mt-1 text-sm text-slate-500">규칙별로 묶어 현재 저장된 번호를 보여줍니다.</p>
           </div>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+          <span className="shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
             총 {numberSets.length}세트
           </span>
         </div>
@@ -375,11 +375,12 @@ export default function MakeWeekNumPage() {
                       <p className="text-sm font-medium text-slate-700">SET {index + 1}</p>
                       <p className="text-xs text-slate-400">{formatCreatedAt(set.createdAt)}</p>
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
+                    <div className="mt-3 flex gap-1">
                       {set.numbers.map((number, numberIndex) => (
                         <NumberBall
                           key={`${set.setId}-${number}`}
                           value={number}
+                          size="sm"
                           emphasized={group.generatorCode === 'CLAUDE' && numberIndex < 2}
                         />
                       ))}

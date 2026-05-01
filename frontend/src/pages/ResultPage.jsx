@@ -237,7 +237,7 @@ export default function ResultPage() {
             <h2 className="text-lg font-semibold text-slate-900">내 번호 비교 결과</h2>
             <p className="mt-1 text-sm text-slate-500">해당 주차에 생성된 세트를 등수와 함께 보여줍니다.</p>
           </div>
-          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+          <span className="shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
             총 {result?.items?.length ?? 0}세트
           </span>
         </div>

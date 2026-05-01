@@ -16,7 +16,7 @@ function getNumberTone(value) {
   return 'bg-[#2cc13a] text-white ring-[#21992d]'
 }
 
-export default function NumberBall({ value, emphasized = false, bonus = false }) {
+export default function NumberBall({ value, emphasized = false, bonus = false, size = 'md' }) {
   const tone = bonus ? 'bg-[#8b5cf6] text-white ring-[#6d3fe0]' : getNumberTone(value)
 
   return (
@@ -29,7 +29,8 @@ export default function NumberBall({ value, emphasized = false, bonus = false })
     >
       <span
         className={cn(
-          'flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold shadow-sm ring-1',
+          'flex items-center justify-center rounded-full font-semibold shadow-sm ring-1',
+          size === 'sm' ? 'h-8 w-8 text-xs' : 'h-10 w-10 text-sm',
           tone
         )}
       >
