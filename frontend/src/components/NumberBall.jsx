@@ -16,20 +16,21 @@ function getNumberTone(value) {
   return 'bg-[#2cc13a] text-white ring-[#21992d]'
 }
 
-export default function NumberBall({ value, emphasized = false, bonus = false }) {
+export default function NumberBall({ value, emphasized = false, bonus = false, size = 'md' }) {
   const tone = bonus ? 'bg-[#8b5cf6] text-white ring-[#6d3fe0]' : getNumberTone(value)
 
   return (
     <span
       className={cn(
         'inline-flex rounded-full p-0.5 transition-shadow',
-        emphasized && 'ring-2 ring-slate-900/15 ring-offset-1 ring-offset-white shadow-[0_0_0_2px_rgba(15,23,42,0.16)]'
+        emphasized && 'ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-[0_0_8px_rgba(251,191,36,0.55)]'
       )}
       title={emphasized ? '강조 번호' : undefined}
     >
       <span
         className={cn(
-          'flex h-10 w-10 items-center justify-center rounded-full text-sm font-semibold shadow-sm ring-1',
+          'flex items-center justify-center rounded-full font-semibold shadow-sm ring-1',
+          size === 'sm' ? 'h-8 w-8 text-xs' : 'h-10 w-10 text-sm',
           tone
         )}
       >

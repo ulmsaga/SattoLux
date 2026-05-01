@@ -127,11 +127,37 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
 
     @Override
     public List<SattoNumberSetResponse> getCurrentWeekNumbers(Long userSeq) {
-        LocalDate today = generationSchedulePolicy.today();
-        return makeWeekNumDao.findNumberSetsByScope(userSeq, today.getYear(), today.getMonthValue(), generationSchedulePolicy.weekOfMonth(today))
-                .stream()
+        return findCalendarWeekNumberSets(userSeq).stream()
                 .map(this::toNumberSetResponse)
                 .toList();
+    }
+
+    // 오늘의 year/month/weekOfMonth로 조회하되, 결과가 없고 이번 주가 이전 달에서 시작된 경우
+    // (예: 4월 30일 목요일 생성 → week 5 of April, 5월 1일 금요일 조회 → week 1 of May)
+    // 이전 달의 마지막 주도 함께 확인한다.
+    private List<Map<String, Object>> findCalendarWeekNumberSets(Long userSeq) {
+        LocalDate today = generationSchedulePolicy.today();
+        int targetYear = today.getYear();
+        int targetMonth = today.getMonthValue();
+        int targetWeekOfMonth = generationSchedulePolicy.weekOfMonth(today);
+
+        List<Map<String, Object>> sets = makeWeekNumDao.findNumberSetsByScope(userSeq, targetYear, targetMonth, targetWeekOfMonth);
+        if (!sets.isEmpty() || targetWeekOfMonth != 1) {
+            return sets;
+        }
+
+        LocalDate firstDayOfMonth = today.withDayOfMonth(1);
+        LocalDate startOfThisWeek = today.with(WeekFields.of(Locale.KOREA).dayOfWeek(), 1);
+        if (startOfThisWeek.isBefore(firstDayOfMonth)) {
+            LocalDate lastDayOfPrevMonth = firstDayOfMonth.minusDays(1);
+            sets = makeWeekNumDao.findNumberSetsByScope(
+                    userSeq,
+                    lastDayOfPrevMonth.getYear(),
+                    lastDayOfPrevMonth.getMonthValue(),
+                    generationSchedulePolicy.weekOfMonth(lastDayOfPrevMonth)
+            );
+        }
+        return sets;
     }
 
     @Override
@@ -211,9 +237,7 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
         int targetWeekOfMonth = generationSchedulePolicy.weekOfMonth(today);
 
         List<Map<String, Object>> activeRules = makeWeekNumDao.findActiveRules(userSeq);
-        List<Map<String, Object>> currentWeekNumberSets = makeWeekNumDao.findNumberSetsByScope(
-                userSeq, targetYear, targetMonth, targetWeekOfMonth
-        );
+        List<Map<String, Object>> currentWeekNumberSets = findCalendarWeekNumberSets(userSeq);
 
         if (activeRules.isEmpty()) {
             return new WeekStatus(
