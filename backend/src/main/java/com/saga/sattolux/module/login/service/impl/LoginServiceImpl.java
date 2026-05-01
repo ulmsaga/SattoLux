@@ -159,8 +159,8 @@ public class LoginServiceImpl implements LoginService {
         }
 
         Long userSeq = getLong(stored, "userSeq");
-        TokenResponse response = buildTokenResponse(userSeq, issuedIp, userAgent);
         loginDao.revokeRefreshToken(refreshTokenHash, now);
+        TokenResponse response = buildTokenResponse(userSeq, issuedIp, userAgent);
         return response;
     }
 
