@@ -370,7 +370,7 @@ export default function MakeWeekNumPage() {
 
               <div className="space-y-3 p-4">
                 {group.items.map((set, index) => (
-                  <div key={set.setId} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200">
+                  <div key={set.setId} className="rounded-2xl bg-white px-3 py-4 shadow-sm ring-1 ring-slate-200">
                     <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-medium text-slate-700">SET {index + 1}</p>
                       <p className="text-xs text-slate-400">{formatCreatedAt(set.createdAt)}</p>

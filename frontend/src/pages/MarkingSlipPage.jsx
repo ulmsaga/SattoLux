@@ -34,7 +34,7 @@ function MarkCell({ value, selected = false }) {
   return (
     <div
       className={cn(
-        'relative flex h-12 w-10 items-center justify-center overflow-hidden text-base font-semibold transition-colors',
+        'relative flex h-12 w-9 items-center justify-center overflow-hidden text-base font-semibold transition-colors',
         selected
           ? 'bg-black text-slate-50'
           : 'bg-white text-red-600'
@@ -260,7 +260,7 @@ export default function MarkingSlipPage() {
 
           <div className="space-y-3 px-4 py-4">
             {NUMBER_ROWS.map((row, rowIndex) => (
-              <div key={`row-${rowIndex}`} className="flex gap-1">
+              <div key={`row-${rowIndex}`} className="flex gap-1.5">
                 {row.map((value) => (
                   <MarkCell key={value} value={value} selected={selectedNumbers.has(value)} />
                 ))}
