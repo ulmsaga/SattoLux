@@ -381,7 +381,7 @@ export default function MakeWeekNumPage() {
                           key={`${set.setId}-${number}`}
                           value={number}
                           size="sm"
-                          emphasized={group.generatorCode === 'CLAUDE' && numberIndex < 2}
+                          emphasized={false}
                         />
                       ))}
                     </div>
