@@ -21,14 +21,12 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -148,7 +146,7 @@ public class MakeWeekNumServiceImpl implements MakeWeekNumService {
         }
 
         LocalDate firstDayOfMonth = today.withDayOfMonth(1);
-        LocalDate startOfThisWeek = today.with(WeekFields.of(Locale.KOREA).dayOfWeek(), 1);
+        LocalDate startOfThisWeek = generationSchedulePolicy.startOfWeek(today);
         if (startOfThisWeek.isBefore(firstDayOfMonth)) {
             LocalDate lastDayOfPrevMonth = firstDayOfMonth.minusDays(1);
             sets = makeWeekNumDao.findNumberSetsByScope(
