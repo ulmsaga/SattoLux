@@ -3,16 +3,18 @@ package com.saga.sattolux.module.makeweeknum.service;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.WeekFields;
-import java.util.Locale;
 
 @Component
 public class GenerationSchedulePolicy {
+
+    private static final WeekFields WEEK_FIELDS = WeekFields.of(DayOfWeek.MONDAY, 1);
 
     private final LocalTime schedulerTime;
     private final ZoneId zoneId;
@@ -36,7 +38,11 @@ public class GenerationSchedulePolicy {
     }
 
     public int weekOfMonth(LocalDate date) {
-        return date.get(WeekFields.of(Locale.KOREA).weekOfMonth());
+        return date.get(WEEK_FIELDS.weekOfMonth());
+    }
+
+    public LocalDate startOfWeek(LocalDate date) {
+        return date.with(WEEK_FIELDS.dayOfWeek(), 1);
     }
 
     public boolean isScheduleTimeReached(ZonedDateTime dateTime) {

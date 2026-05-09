@@ -29,6 +29,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/auth/rsa-key",
                     "/api/auth/login",
+                    "/api/auth/pin-login",
                     "/api/auth/otp/send",
                     "/api/auth/otp/verify",
                     "/api/auth/token",

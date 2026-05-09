@@ -81,6 +81,7 @@ public class ResultServiceImpl implements ResultService {
     @Override
     public ResultWeekResponse getWeekResult(Long userSeq, Integer year, Integer month, Integer weekOfMonth) {
         LocalDate today = generationSchedulePolicy.today();
+        boolean useCalendarFallback = (year == null && month == null && weekOfMonth == null);
         int targetYear = year == null ? today.getYear() : year;
         int targetMonth = month == null ? today.getMonthValue() : month;
         int targetWeek = weekOfMonth == null ? generationSchedulePolicy.weekOfMonth(today) : weekOfMonth;
@@ -90,6 +91,29 @@ public class ResultServiceImpl implements ResultService {
                 .stream()
                 .map(this::toResultItem)
                 .toList();
+
+        // 월 경계 주차 fallback: 결과 없고 week==1이고 이번 주가 이전 달에서 시작된 경우
+        if (useCalendarFallback && items.isEmpty() && targetWeek == 1) {
+            LocalDate firstDayOfMonth = today.withDayOfMonth(1);
+            LocalDate startOfThisWeek = generationSchedulePolicy.startOfWeek(today);
+            if (startOfThisWeek.isBefore(firstDayOfMonth)) {
+                LocalDate lastDayOfPrevMonth = firstDayOfMonth.minusDays(1);
+                int fallbackYear = lastDayOfPrevMonth.getYear();
+                int fallbackMonth = lastDayOfPrevMonth.getMonthValue();
+                int fallbackWeek = generationSchedulePolicy.weekOfMonth(lastDayOfPrevMonth);
+                List<ResultSetItemResponse> fallbackItems = resultDao.findMatchedSetsByScope(userSeq, fallbackYear, fallbackMonth, fallbackWeek)
+                        .stream()
+                        .map(this::toResultItem)
+                        .toList();
+                if (!fallbackItems.isEmpty()) {
+                    targetYear = fallbackYear;
+                    targetMonth = fallbackMonth;
+                    targetWeek = fallbackWeek;
+                    drawResult = resultDao.findWeekDrawResultByScope(targetYear, targetMonth, targetWeek);
+                    items = fallbackItems;
+                }
+            }
+        }
 
         if (drawResult == null) {
             return new ResultWeekResponse(targetYear, targetMonth, targetWeek, null, null, List.of(), null, items);
@@ -178,10 +202,34 @@ public class ResultServiceImpl implements ResultService {
 
     @Transactional
     protected void saveDrawResultAndCompare(DrawResultPayload payload) {
-        int targetYear = payload.drawDate().getYear();
-        int targetMonth = payload.drawDate().getMonthValue();
-        int targetWeek = generationSchedulePolicy.weekOfMonth(payload.drawDate());
+        LocalDate drawDate = payload.drawDate();
+        int targetYear = drawDate.getYear();
+        int targetMonth = drawDate.getMonthValue();
+        int targetWeek = generationSchedulePolicy.weekOfMonth(drawDate);
         List<Map<String, Object>> sets = resultDao.findNumberSetsByScope(targetYear, targetMonth, targetWeek);
+
+        // 월 경계 fallback: draw date가 해당 월 1주차인데 번호는 이전 달 마지막 주차에 저장된 경우
+        // 예) 번호 생성 4/30(목) → (2026, 4, 5) 저장, draw 5/2(토) → (2026, 5, 1) 조회 → 불일치
+        if (sets.isEmpty() && targetWeek == 1) {
+            LocalDate firstDayOfMonth = drawDate.withDayOfMonth(1);
+            LocalDate startOfDrawWeek = generationSchedulePolicy.startOfWeek(drawDate);
+            if (startOfDrawWeek.isBefore(firstDayOfMonth)) {
+                LocalDate lastDayOfPrevMonth = firstDayOfMonth.minusDays(1);
+                int fallbackYear = lastDayOfPrevMonth.getYear();
+                int fallbackMonth = lastDayOfPrevMonth.getMonthValue();
+                int fallbackWeek = generationSchedulePolicy.weekOfMonth(lastDayOfPrevMonth);
+                List<Map<String, Object>> fallbackSets = resultDao.findNumberSetsByScope(fallbackYear, fallbackMonth, fallbackWeek);
+                if (!fallbackSets.isEmpty()) {
+                    log.info("Month boundary fallback in saveDrawResultAndCompare: drawDate={}, ({}/{}/w{}) → ({}/{}/w{})",
+                            drawDate, targetYear, targetMonth, targetWeek, fallbackYear, fallbackMonth, fallbackWeek);
+                    targetYear = fallbackYear;
+                    targetMonth = fallbackMonth;
+                    targetWeek = fallbackWeek;
+                    sets = fallbackSets;
+                }
+            }
+        }
+
         saveDrawResultAndCompare(payload, targetYear, targetMonth, targetWeek, sets);
     }
 

@@ -8,9 +8,11 @@
         SELECT user_seq AS userSeq,
                user_id AS userId,
                password_hash AS passwordHash,
+               pin_hash AS pinHash,
                email AS email,
                role_code AS roleCode,
                otp_enabled AS otpEnabled,
+               createnum_yn AS createnumYn,
                account_status AS accountStatus,
                failed_login_count AS failedLoginCount,
                locked_until AS lockedUntil,
@@ -25,6 +27,7 @@
                email AS email,
                role_code AS roleCode,
                otp_enabled AS otpEnabled,
+               createnum_yn AS createnumYn,
                account_status AS accountStatus,
                failed_login_count AS failedLoginCount,
                locked_until AS lockedUntil,
@@ -32,6 +35,12 @@
         FROM app_user
         WHERE user_seq = #{userSeq}
     </select>
+
+    <update id="updatePinHash" parameterType="map">
+        UPDATE app_user
+        SET pin_hash = #{pinHash}
+        WHERE user_seq = #{userSeq}
+    </update>
 
     <update id="increaseFailedLoginCount" parameterType="long">
         UPDATE app_user

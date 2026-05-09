@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS `app_user` (
     `email`                VARCHAR(100)    NOT NULL,
     `role_code`            VARCHAR(20)     NOT NULL DEFAULT 'USER',
     `otp_enabled`          TINYINT(1)      NOT NULL DEFAULT 0,
+    `createnum_yn`         CHAR(1)         NOT NULL DEFAULT 'Y',      -- Y: 번호생성 가능, N: 불가
+    `pin_hash`             VARCHAR(255)             DEFAULT NULL,      -- 간편 4자리 PIN (bcrypt)
     `account_status`       VARCHAR(20)     NOT NULL DEFAULT 'ACTIVE', -- ACTIVE / LOCKED / DISABLED
     `failed_login_count`   TINYINT         NOT NULL DEFAULT 0,
     `locked_until`         DATETIME                 DEFAULT NULL,

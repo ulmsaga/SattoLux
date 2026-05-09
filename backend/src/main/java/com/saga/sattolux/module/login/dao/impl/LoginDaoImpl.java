@@ -110,4 +110,12 @@ public class LoginDaoImpl implements LoginDao {
         params.put("revokedAt", revokedAt);
         sql.update(NS + "revokeRefreshToken", params);
     }
+
+    @Override
+    public void updatePinHash(Long userSeq, String pinHash) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("userSeq", userSeq);
+        params.put("pinHash", pinHash);
+        sql.update(NS + "updatePinHash", params);
+    }
 }

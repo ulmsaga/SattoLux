@@ -4,6 +4,7 @@ INSERT INTO app_user (
     email,
     role_code,
     otp_enabled,
+    createnum_yn,
     account_status
 ) VALUES (
     '__LOGIN_ADMIN__',
@@ -11,6 +12,7 @@ INSERT INTO app_user (
     '__LOGIN_ADMIN_EMAIL__',
     'ADMIN',
     0,
+    'N',
     'ACTIVE'
 )
 ON DUPLICATE KEY UPDATE
@@ -18,6 +20,7 @@ ON DUPLICATE KEY UPDATE
     email = VALUES(email),
     role_code = 'ADMIN',
     otp_enabled = 0,
+    createnum_yn = 'N',
     account_status = 'ACTIVE',
     failed_login_count = 0,
     locked_until = NULL;
@@ -28,6 +31,7 @@ INSERT INTO app_user (
     email,
     role_code,
     otp_enabled,
+    createnum_yn,
     account_status
 ) VALUES (
     '__LOGIN_USER__',
@@ -35,6 +39,7 @@ INSERT INTO app_user (
     '__LOGIN_EMAIL__',
     'USER',
     0,
+    'Y',
     'ACTIVE'
 )
 ON DUPLICATE KEY UPDATE
@@ -42,6 +47,7 @@ ON DUPLICATE KEY UPDATE
     email = VALUES(email),
     role_code = 'USER',
     otp_enabled = 0,
+    createnum_yn = 'Y',
     account_status = 'ACTIVE',
     failed_login_count = 0,
     locked_until = NULL;
