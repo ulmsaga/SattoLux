@@ -10,5 +10,7 @@ export const getWeekResult = ({ year, month, week } = {}) => {
   return client.get(`/result/week${query ? `?${query}` : ''}`)
 }
 
+export const getResultHistory = () => client.get('/result/history')
+export const getResultHistoryDetail = (year, month, week) => client.get(`/result/history/${year}/${month}/${week}`)
 export const prepareLatestResultManualTest = () => client.post('/result/admin/manual-test-prepare')
 export const runLatestResultManualTest = () => client.post('/result/admin/manual-test-latest')

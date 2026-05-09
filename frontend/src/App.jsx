@@ -6,6 +6,8 @@ import LoginPage from '@/pages/LoginPage'
 import MakeWeekNumPage from '@/pages/MakeWeekNumPage'
 import MarkingSlipPage from '@/pages/MarkingSlipPage'
 import ResultPage from '@/pages/ResultPage'
+import ResultHistoryPage from '@/pages/ResultHistoryPage'
+import ResultHistoryDetailPage from '@/pages/ResultHistoryDetailPage'
 import SettingsPage from '@/pages/SettingsPage'
 
 function AppLoader() {
@@ -43,6 +45,8 @@ export default function App() {
             <Route path="/make-week-num" element={<MakeWeekNumPage />} />
             <Route path="/marking-slip" element={<MarkingSlipPage />} />
             <Route path="/result" element={<ResultPage />} />
+            <Route path="/result-history" element={<ResultHistoryPage />} />
+            <Route path="/result-history/:year/:month/:week" element={<ResultHistoryDetailPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />

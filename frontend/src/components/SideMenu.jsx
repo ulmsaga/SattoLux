@@ -1,13 +1,14 @@
 import { useEffect } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
-import { Sparkles, BarChart2, Settings, LogOut, X } from 'lucide-react'
+import { Sparkles, BarChart2, History, Settings, LogOut, X } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { cn } from '@/lib/utils'
 
 const NAV_ITEMS = [
-  { to: '/make-week-num', icon: Sparkles, label: '번호 생성' },
-  { to: '/result',        icon: BarChart2, label: '결과 비교' },
-  { to: '/settings',      icon: Settings,  label: '설정' },
+  { to: '/make-week-num',   icon: Sparkles,  label: '번호 생성' },
+  { to: '/result',          icon: BarChart2, label: '결과 비교' },
+  { to: '/result-history',  icon: History,   label: '지난 결과' },
+  { to: '/settings',        icon: Settings,  label: '설정' },
 ]
 
 export default function SideMenu({ open, onClose }) {
