@@ -160,14 +160,14 @@
         SELECT sns.target_year          AS targetYear,
                sns.target_month         AS targetMonth,
                sns.target_week_of_month AS targetWeekOfMonth,
-               smr.rank                 AS rank,
+               smr.`rank`               AS `rank`,
                COUNT(*)                 AS rankCount
         FROM satto_number_set sns
         JOIN satto_match_result smr ON smr.set_id = sns.set_id
         WHERE sns.user_seq = #{userSeq}
-          AND smr.rank IS NOT NULL
-        GROUP BY sns.target_year, sns.target_month, sns.target_week_of_month, smr.rank
-        ORDER BY sns.target_year DESC, sns.target_month DESC, sns.target_week_of_month DESC, smr.rank
+          AND smr.`rank` IS NOT NULL
+        GROUP BY sns.target_year, sns.target_month, sns.target_week_of_month, smr.`rank`
+        ORDER BY sns.target_year DESC, sns.target_month DESC, sns.target_week_of_month DESC, smr.`rank`
     </select>
 
     <select id="findRankedSetsByScope" parameterType="map" resultType="map">
@@ -190,8 +190,8 @@
           AND sns.target_year = #{targetYear}
           AND sns.target_month = #{targetMonth}
           AND sns.target_week_of_month = #{targetWeekOfMonth}
-          AND smr.rank IS NOT NULL
-        ORDER BY smr.rank, sns.set_id
+          AND smr.`rank` IS NOT NULL
+        ORDER BY smr.`rank`, sns.set_id
     </select>
 
 </mapper>
