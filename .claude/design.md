@@ -126,6 +126,12 @@
   - 관리자 전용 SSE 결과 알림 재전송 테스트
 - `GET /api/result/week`
   - 특정 연/월/주차 결과 및 내 번호 비교 결과 조회
+- `GET /api/result/history`
+  - 로그인 사용자의 전체 주차별 결과 이력 목록 조회 (최신순)
+  - 응답: `[{ year, month, weekOfMonth, hasMatch, topRank, rankSummary[] }]`
+- `GET /api/result/history/{year}/{month}/{week}`
+  - 특정 주차의 당첨 세트 상세 조회 (미당첨 세트 제외)
+  - 응답: 당첨 번호 + 당첨 세트 목록 (일치 번호 포함)
 - `POST /api/auth/admin/dev-users/ensure-general`
   - dev 환경에서 일반 사용자 계정/기본 rule 보장
 
@@ -445,6 +451,7 @@
 | S01 | 로그인 | `module.login` |
 | S02 | 번호 생성/조회 | `module.makeweeknum` |
 | S03 | 추첨 결과 비교 | `module.result` |
+| S05 | 지난 결과 (목록 + 상세) | `module.result` |
 | S04 | 사용자 설정 | `module.config` |
 
 ## 결정 사항
