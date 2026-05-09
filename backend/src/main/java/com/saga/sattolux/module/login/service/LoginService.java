@@ -1,5 +1,7 @@
 package com.saga.sattolux.module.login.service;
 
+import com.saga.sattolux.module.login.dto.PinLoginRequest;
+import com.saga.sattolux.module.login.dto.SetPinRequest;
 import com.saga.sattolux.module.login.dto.UserMeResponse;
 import com.saga.sattolux.module.login.dto.LoginRequest;
 import com.saga.sattolux.module.login.dto.LoginResponse;
@@ -10,6 +12,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 public interface LoginService {
     RsaKeyResponse generateRsaKey() throws Exception;
     LoginResponse login(LoginRequest request) throws Exception;
+    LoginResponse pinLogin(PinLoginRequest request) throws Exception;
+    void setupPin(Long userSeq, SetPinRequest request) throws Exception;
     void sendOtp(String authSessionToken);
     TokenResponse verifyOtpAndIssueToken(String authSessionToken, String code, String issuedIp, String userAgent);
     TokenResponse issueToken(String authSessionToken, String issuedIp, String userAgent);

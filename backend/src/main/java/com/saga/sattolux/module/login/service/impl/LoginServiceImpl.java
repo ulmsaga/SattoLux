@@ -9,7 +9,9 @@ import com.saga.sattolux.core.auth.SseConnectionManager;
 import com.saga.sattolux.module.login.dao.LoginDao;
 import com.saga.sattolux.module.login.dto.LoginRequest;
 import com.saga.sattolux.module.login.dto.LoginResponse;
+import com.saga.sattolux.module.login.dto.PinLoginRequest;
 import com.saga.sattolux.module.login.dto.RsaKeyResponse;
+import com.saga.sattolux.module.login.dto.SetPinRequest;
 import com.saga.sattolux.module.login.dto.TokenResponse;
 import com.saga.sattolux.module.login.dto.UserMeResponse;
 import com.saga.sattolux.module.login.service.LoginService;
@@ -81,6 +83,69 @@ public class LoginServiceImpl implements LoginService {
 
         String authSessionToken = authSessionStore.createSession(userSeq, otpEnabled);
         return new LoginResponse(authSessionToken, otpEnabled);
+    }
+
+    @Override
+    public LoginResponse pinLogin(PinLoginRequest request) throws Exception {
+        Map<String, Object> user = loginDao.findByUserId(request.userId());
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        user = normalizeLockState(user, now);
+        validateAccountStatus(user, now);
+
+        String pinHash = getString(user, "pinHash");
+        if (pinHash == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "PIN이 설정되지 않은 계정입니다.");
+        }
+
+        String rawPin;
+        try {
+            rawPin = rsaUtil.decrypt(request.sessionId(), request.encryptedPin());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE);
+        }
+
+        if (rawPin.length() != 4 || !rawPin.matches("\\d{4}")) {
+            handleFailedLogin(user, now);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE);
+        }
+
+        if (!passwordEncoder.matches(rawPin, pinHash)) {
+            handleFailedLogin(user, now);
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, INVALID_CREDENTIALS_MESSAGE);
+        }
+
+        Long userSeq = getLong(user, "userSeq");
+        boolean otpEnabled = getBoolean(user, "otpEnabled");
+
+        loginDao.resetLoginFailures(userSeq);
+        loginDao.updateLastLogin(userSeq, now);
+
+        String authSessionToken = authSessionStore.createSession(userSeq, otpEnabled);
+        return new LoginResponse(authSessionToken, otpEnabled);
+    }
+
+    @Override
+    public void setupPin(Long userSeq, SetPinRequest request) throws Exception {
+        Map<String, Object> user = requireUser(userSeq);
+        validateAccountStatus(user, LocalDateTime.now());
+
+        String rawPin;
+        try {
+            rawPin = rsaUtil.decrypt(request.sessionId(), request.encryptedPin());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "PIN 복호화에 실패했습니다.");
+        }
+
+        if (rawPin.length() != 4 || !rawPin.matches("\\d{4}")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "PIN은 숫자 4자리여야 합니다.");
+        }
+
+        String pinHash = passwordEncoder.encode(rawPin);
+        loginDao.updatePinHash(userSeq, pinHash);
     }
 
     @Override

@@ -25,10 +25,12 @@ import org.springframework.web.client.RestClient;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Service
@@ -81,6 +83,7 @@ public class ResultServiceImpl implements ResultService {
     @Override
     public ResultWeekResponse getWeekResult(Long userSeq, Integer year, Integer month, Integer weekOfMonth) {
         LocalDate today = generationSchedulePolicy.today();
+        boolean useCalendarFallback = (year == null && month == null && weekOfMonth == null);
         int targetYear = year == null ? today.getYear() : year;
         int targetMonth = month == null ? today.getMonthValue() : month;
         int targetWeek = weekOfMonth == null ? generationSchedulePolicy.weekOfMonth(today) : weekOfMonth;
@@ -90,6 +93,29 @@ public class ResultServiceImpl implements ResultService {
                 .stream()
                 .map(this::toResultItem)
                 .toList();
+
+        // 월 경계 주차 fallback: 결과 없고 week==1이고 이번 주가 이전 달에서 시작된 경우
+        if (useCalendarFallback && items.isEmpty() && targetWeek == 1) {
+            LocalDate firstDayOfMonth = today.withDayOfMonth(1);
+            LocalDate startOfThisWeek = today.with(WeekFields.of(Locale.KOREA).dayOfWeek(), 1);
+            if (startOfThisWeek.isBefore(firstDayOfMonth)) {
+                LocalDate lastDayOfPrevMonth = firstDayOfMonth.minusDays(1);
+                int fallbackYear = lastDayOfPrevMonth.getYear();
+                int fallbackMonth = lastDayOfPrevMonth.getMonthValue();
+                int fallbackWeek = generationSchedulePolicy.weekOfMonth(lastDayOfPrevMonth);
+                List<ResultSetItemResponse> fallbackItems = resultDao.findMatchedSetsByScope(userSeq, fallbackYear, fallbackMonth, fallbackWeek)
+                        .stream()
+                        .map(this::toResultItem)
+                        .toList();
+                if (!fallbackItems.isEmpty()) {
+                    targetYear = fallbackYear;
+                    targetMonth = fallbackMonth;
+                    targetWeek = fallbackWeek;
+                    drawResult = resultDao.findWeekDrawResultByScope(targetYear, targetMonth, targetWeek);
+                    items = fallbackItems;
+                }
+            }
+        }
 
         if (drawResult == null) {
             return new ResultWeekResponse(targetYear, targetMonth, targetWeek, null, null, List.of(), null, items);

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, Loader2, MoveHorizontal, Ticket } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Loader2, Ticket } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { getCurrentWeekNumbers } from '@/api/makeWeekNum'
@@ -40,42 +40,12 @@ function MarkCell({ value, selected = false }) {
           : 'bg-white text-red-600'
       )}
     >
-      <span
-        className={cn(
-          'pointer-events-none absolute left-0 right-0 top-0 border-t-[3px]',
-          selected ? 'border-black' : 'border-red-500'
-        )}
-      />
-      <span
-        className={cn(
-          'pointer-events-none absolute bottom-0 left-0 right-0 border-b-[3px]',
-          selected ? 'border-black' : 'border-red-500'
-        )}
-      />
-      <span
-        className={cn(
-          'pointer-events-none absolute left-0 top-0 h-[12px] border-l-[3px]',
-          selected ? 'border-black' : 'border-red-500'
-        )}
-      />
-      <span
-        className={cn(
-          'pointer-events-none absolute right-0 top-0 h-[12px] border-r-[3px]',
-          selected ? 'border-black' : 'border-red-500'
-        )}
-      />
-      <span
-        className={cn(
-          'pointer-events-none absolute bottom-0 left-0 h-[12px] border-l-[3px]',
-          selected ? 'border-black' : 'border-red-500'
-        )}
-      />
-      <span
-        className={cn(
-          'pointer-events-none absolute bottom-0 right-0 h-[12px] border-r-[3px]',
-          selected ? 'border-black' : 'border-red-500'
-        )}
-      />
+      <span className={cn('pointer-events-none absolute left-0 right-0 top-0 border-t-[3px]', selected ? 'border-black' : 'border-red-500')} />
+      <span className={cn('pointer-events-none absolute bottom-0 left-0 right-0 border-b-[3px]', selected ? 'border-black' : 'border-red-500')} />
+      <span className={cn('pointer-events-none absolute left-0 top-0 h-[12px] border-l-[3px]', selected ? 'border-black' : 'border-red-500')} />
+      <span className={cn('pointer-events-none absolute right-0 top-0 h-[12px] border-r-[3px]', selected ? 'border-black' : 'border-red-500')} />
+      <span className={cn('pointer-events-none absolute bottom-0 left-0 h-[12px] border-l-[3px]', selected ? 'border-black' : 'border-red-500')} />
+      <span className={cn('pointer-events-none absolute bottom-0 right-0 h-[12px] border-r-[3px]', selected ? 'border-black' : 'border-red-500')} />
       <span className="relative z-10">{value}</span>
     </div>
   )
@@ -183,101 +153,102 @@ export default function MarkingSlipPage() {
 
   return (
     <div className="space-y-5 pb-10">
-      <section className="overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,_#f8fafc_0%,_#fff7ed_45%,_#fff1f2_100%)] px-5 py-6 shadow-xl ring-1 ring-red-100">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => navigate('/make-week-num')}
-              className="-ml-2 mb-3 h-10 rounded-xl px-3 text-red-700 hover:bg-red-50 hover:text-red-800"
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              이전
-            </Button>
+      <section className="overflow-hidden rounded-[28px] bg-[linear-gradient(135deg,_#f8fafc_0%,_#fff7ed_45%,_#fff1f2_100%)] px-5 py-5 shadow-xl ring-1 ring-red-100">
+        {/* 이전 버튼 - 단독 라인 */}
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => navigate('/make-week-num')}
+          className="-ml-2 mb-3 h-9 rounded-xl px-3 text-red-700 hover:bg-red-50 hover:text-red-800"
+        >
+          <ChevronLeft className="mr-1 h-4 w-4" />
+          이전
+        </Button>
+
+        {/* 주차 정보 + 현재 위치 */}
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
             <span className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700 ring-1 ring-red-200">
               <Ticket className="h-3.5 w-3.5" />
               {formatWeekLabel(activeSlide)}
             </span>
             <h1 className="mt-3 text-2xl font-semibold tracking-tight text-slate-900">마킹 보기</h1>
-            <p className="mt-2 max-w-md text-sm leading-6 text-slate-600">
-              실제 로또 용지처럼 한 구역씩 확인하며 손으로 마킹할 수 있도록 구성했습니다.
-            </p>
           </div>
-          <div className="rounded-2xl bg-white/90 px-4 py-3 text-right shadow-sm ring-1 ring-red-100">
-            <p className="text-xs uppercase tracking-[0.2em] text-slate-400">현재 위치</p>
-            <p className="mt-1 text-lg font-semibold text-slate-900">{activeSlide.sheetNumber}장 {activeSlide.slotLabel}구역</p>
+          <div className="shrink-0 rounded-2xl bg-white/90 px-4 py-3 text-center shadow-sm ring-1 ring-red-100 min-w-[120px]">
+            <p className="text-xs uppercase tracking-[0.15em] text-slate-400">현재 위치</p>
+            <p className="mt-1 text-base font-semibold text-slate-900 whitespace-nowrap">{activeSlide.sheetNumber}장 {activeSlide.slotLabel}구역</p>
             <p className="mt-1 text-xs text-slate-500">{activeSlide.slideNumber} / {slides.length}세트</p>
           </div>
         </div>
 
-        <div className="mt-5 flex items-center justify-between gap-3 rounded-2xl bg-white/80 px-4 py-3 ring-1 ring-red-100">
-          <div className="flex items-center gap-2 text-sm text-slate-600">
-            <MoveHorizontal className="h-4 w-4 text-red-600" />
-            좌우 드래그로 다음 세트로 이동합니다.
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setActiveIndex((current) => Math.max(current - 1, 0))}
-              disabled={activeIndex === 0}
-              className="rounded-xl border border-red-100 bg-white text-red-700 hover:bg-red-50 disabled:opacity-40"
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              이전
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setActiveIndex((current) => Math.min(current + 1, slides.length - 1))}
-              disabled={activeIndex === slides.length - 1}
-              className="rounded-xl border border-red-100 bg-white text-red-700 hover:bg-red-50 disabled:opacity-40"
-            >
-              다음
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
+        {/* 이전/다음 네비게이션 */}
+        <div className="mt-4 flex items-center justify-between gap-2 rounded-2xl bg-white/80 px-3 py-3 ring-1 ring-red-100">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setActiveIndex((current) => Math.max(current - 1, 0))}
+            disabled={activeIndex === 0}
+            className="min-w-[88px] rounded-xl border border-red-100 bg-white text-red-700 hover:bg-red-50 disabled:opacity-40 flex items-center justify-center gap-1"
+          >
+            <ChevronLeft className="h-4 w-4 shrink-0" />
+            <span>이전</span>
+          </Button>
+          <span className="text-xs text-slate-500 px-1">{activeSlide.slideNumber} / {slides.length}</span>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => setActiveIndex((current) => Math.min(current + 1, slides.length - 1))}
+            disabled={activeIndex === slides.length - 1}
+            className="min-w-[88px] rounded-xl border border-red-100 bg-white text-red-700 hover:bg-red-50 disabled:opacity-40 flex items-center justify-center gap-1"
+          >
+            <span>다음</span>
+            <ChevronRight className="h-4 w-4 shrink-0" />
+          </Button>
         </div>
       </section>
 
-      <section
-        className="mx-auto max-w-[430px] touch-pan-y select-none"
-        onTouchStart={(event) => handleDragStart(event.changedTouches[0].clientX)}
-        onTouchEnd={(event) => handleDragEnd(event.changedTouches[0].clientX)}
-        onPointerDown={(event) => handleDragStart(event.clientX)}
-        onPointerUp={(event) => handleDragEnd(event.clientX)}
-      >
-        <article className="overflow-hidden rounded-[28px] border border-red-200 bg-white shadow-[0_24px_60px_rgba(127,29,29,0.12)]">
-          <header className="flex items-stretch border-b border-red-200">
-            <div className="flex w-16 items-center justify-center border-r border-red-200 bg-white text-2xl font-bold text-red-700">
-              {activeSlide.slotLabel}
-            </div>
-            <div className="flex flex-1 items-center justify-center bg-red-700 px-4 py-5 text-center text-3xl font-semibold tracking-tight text-white">
-              1,000원
-            </div>
-          </header>
+      {/* 마킹 영역 - 중앙 정렬 */}
+      <div className="flex w-full justify-center">
+        <section
+          className="w-full max-w-[400px] touch-pan-y select-none"
+          onTouchStart={(event) => handleDragStart(event.changedTouches[0].clientX)}
+          onTouchEnd={(event) => handleDragEnd(event.changedTouches[0].clientX)}
+          onPointerDown={(event) => handleDragStart(event.clientX)}
+          onPointerUp={(event) => handleDragEnd(event.clientX)}
+        >
+          <article className="overflow-hidden rounded-[28px] border border-red-200 bg-white shadow-[0_24px_60px_rgba(127,29,29,0.12)]">
+            <header className="flex items-stretch border-b border-red-200">
+              <div className="flex w-16 items-center justify-center border-r border-red-200 bg-white text-2xl font-bold text-red-700">
+                {activeSlide.slotLabel}
+              </div>
+              <div className="flex flex-1 items-center justify-center bg-red-700 px-4 py-5 text-center text-3xl font-semibold tracking-tight text-white">
+                1,000원
+              </div>
+            </header>
 
-          <div className="space-y-3 px-4 py-4">
-            {NUMBER_ROWS.map((row, rowIndex) => (
-              <div key={`row-${rowIndex}`} className="flex gap-1.5">
-                {row.map((value) => (
-                  <MarkCell key={value} value={value} selected={selectedNumbers.has(value)} />
+            <div className="flex justify-center px-4 py-4">
+              <div className="flex flex-col gap-3">
+                {NUMBER_ROWS.map((row, rowIndex) => (
+                  <div key={`row-${rowIndex}`} className="flex gap-1.5">
+                    {row.map((value) => (
+                      <MarkCell key={value} value={value} selected={selectedNumbers.has(value)} />
+                    ))}
+                  </div>
                 ))}
               </div>
-            ))}
-          </div>
+            </div>
 
-          <footer className="flex items-end justify-between px-4 pb-5 pt-2">
-            <div className="rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700 ring-1 ring-red-100">
-              {activeSlide.methodCode} · {activeSlide.generatorCode}
-            </div>
-            <div className="rounded-[16px] border-2 border-red-700 px-4 py-2 text-2xl font-bold tracking-tight text-red-700">
-              자동
-            </div>
-          </footer>
-        </article>
-      </section>
+            <footer className="flex items-end justify-between px-4 pb-5 pt-2">
+              <div className="rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-700 ring-1 ring-red-100">
+                {activeSlide.methodCode} · {activeSlide.generatorCode}
+              </div>
+              <div className="rounded-[16px] border-2 border-red-700 px-4 py-2 text-2xl font-bold tracking-tight text-red-700">
+                자동
+              </div>
+            </footer>
+          </article>
+        </section>
+      </div>
     </div>
   )
 }

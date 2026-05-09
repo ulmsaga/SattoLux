@@ -3,6 +3,8 @@ package com.saga.sattolux.module.login.controller;
 import com.saga.sattolux.module.login.dto.LoginRequest;
 import com.saga.sattolux.module.login.dto.LoginResponse;
 import com.saga.sattolux.module.login.dto.LogoutRequest;
+import com.saga.sattolux.module.login.dto.PinLoginRequest;
+import com.saga.sattolux.module.login.dto.SetPinRequest;
 import com.saga.sattolux.module.login.dto.OtpSendRequest;
 import com.saga.sattolux.module.login.dto.OtpVerifyRequest;
 import com.saga.sattolux.module.login.dto.RefreshRequest;
@@ -44,6 +46,21 @@ public class LoginController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) throws Exception {
         return ResponseEntity.ok(loginService.login(request));
+    }
+
+    // 2-b. 1차 인증 (4자리 PIN)
+    @PostMapping("/pin-login")
+    public ResponseEntity<LoginResponse> pinLogin(@Valid @RequestBody PinLoginRequest request) throws Exception {
+        return ResponseEntity.ok(loginService.pinLogin(request));
+    }
+
+    // PIN 설정 (인증된 사용자)
+    @PostMapping("/pin-setup")
+    public ResponseEntity<Void> pinSetup(@Valid @RequestBody SetPinRequest request,
+                                         Authentication authentication) throws Exception {
+        Long userSeq = (Long) authentication.getPrincipal();
+        loginService.setupPin(userSeq, request);
+        return ResponseEntity.ok().build();
     }
 
     // 3. 2차 인증 OTP 전송

@@ -2,6 +2,8 @@ import client from './client'
 
 export const getRsaKey = () => client.get('/auth/rsa-key')
 export const login = (data) => client.post('/auth/login', data)
+export const pinLogin = (data) => client.post('/auth/pin-login', data)
+export const pinSetup = (data) => client.post('/auth/pin-setup', data)
 export const issueToken = (data) => client.post('/auth/token', data)
 export const sendOtp = (data) => client.post('/auth/otp/send', data)
 export const verifyOtp = (data) => client.post('/auth/otp/verify', data)

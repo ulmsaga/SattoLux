@@ -12,6 +12,40 @@
 
 ---
 
+## 0. 로컬 실행 방법
+
+프론트:
+
+```bash
+cd /path/to/SattoLux/frontend
+npm run dev
+```
+
+백엔드:
+
+```bash
+cd /path/to/SattoLux/backend
+source ../.env
+./mvnw spring-boot:run
+```
+
+한 줄로 실행:
+
+```bash
+cd /path/to/SattoLux/backend && source ../.env && ./mvnw spring-boot:run
+```
+
+로컬 기본 포트:
+- 프론트: `http://localhost:8080`
+- 백엔드: `http://localhost:8081`
+
+주의:
+- 백엔드는 `.env`를 먼저 `source`해야 한다
+- Java 17 필요
+- `.env`에는 최소 `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`가 있어야 한다
+
+---
+
 ## 1. 최종 배포 구조
 
 ```text

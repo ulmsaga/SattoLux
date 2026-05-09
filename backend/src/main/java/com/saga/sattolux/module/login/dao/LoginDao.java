@@ -18,4 +18,5 @@ public interface LoginDao {
     void saveRefreshToken(Long userSeq, String tokenHash, LocalDateTime expiresAt, String issuedIp, String userAgent);
     Map<String, Object> findRefreshToken(String tokenHash);
     void revokeRefreshToken(String tokenHash, LocalDateTime revokedAt);
+    void updatePinHash(Long userSeq, String pinHash);
 }
