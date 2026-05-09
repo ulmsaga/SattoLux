@@ -6,6 +6,7 @@ import com.saga.sattolux.module.makeweeknum.dto.GenerateNumbersResponse;
 import com.saga.sattolux.module.makeweeknum.service.GenerationSchedulePolicy;
 import com.saga.sattolux.module.makeweeknum.service.MakeWeekNumService;
 import com.saga.sattolux.module.notification.dao.NotificationDao;
+import com.saga.sattolux.module.result.dto.ResultHistoryItemResponse;
 import com.saga.sattolux.module.result.dto.ResultManualTestPrepareResponse;
 import com.saga.sattolux.module.result.dao.ResultDao;
 import com.saga.sattolux.module.result.dto.ResultSetItemResponse;
@@ -136,6 +137,66 @@ public class ResultServiceImpl implements ResultService {
                 getInt(drawResult, "bonusNo"),
                 items
         );
+    }
+
+    @Override
+    public List<ResultHistoryItemResponse> getResultHistory(Long userSeq) {
+        List<Map<String, Object>> scopes = resultDao.findAllScopesForUser(userSeq);
+        List<Map<String, Object>> rankRows = resultDao.findRankSummariesForUser(userSeq);
+
+        // (year-month-week) → List<RankCount> 로 미리 집계
+        Map<String, List<ResultHistoryItemResponse.RankCount>> rankMap = new HashMap<>();
+        for (Map<String, Object> row : rankRows) {
+            String key = scopeKey(getInt(row, "targetYear"), getInt(row, "targetMonth"), getInt(row, "targetWeekOfMonth"));
+            rankMap.computeIfAbsent(key, k -> new ArrayList<>())
+                    .add(new ResultHistoryItemResponse.RankCount(getInt(row, "rank"), getInt(row, "rankCount")));
+        }
+
+        return scopes.stream().map(scope -> {
+            int y = getInt(scope, "targetYear");
+            int m = getInt(scope, "targetMonth");
+            int w = getInt(scope, "targetWeekOfMonth");
+            List<ResultHistoryItemResponse.RankCount> summary = rankMap.getOrDefault(scopeKey(y, m, w), List.of());
+            Integer topRank = summary.stream().mapToInt(ResultHistoryItemResponse.RankCount::rank).min().isPresent()
+                    ? summary.stream().mapToInt(ResultHistoryItemResponse.RankCount::rank).min().getAsInt()
+                    : null;
+            return new ResultHistoryItemResponse(y, m, w, !summary.isEmpty(), topRank, summary);
+        }).toList();
+    }
+
+    @Override
+    public ResultWeekResponse getResultHistoryDetail(Long userSeq, int year, int month, int weekOfMonth) {
+        Map<String, Object> drawResult = resultDao.findWeekDrawResultByScope(year, month, weekOfMonth);
+        List<ResultSetItemResponse> items = resultDao.findRankedSetsByScope(userSeq, year, month, weekOfMonth)
+                .stream()
+                .map(this::toResultItem)
+                .toList();
+
+        if (drawResult == null) {
+            return new ResultWeekResponse(year, month, weekOfMonth, null, null, List.of(), null, items);
+        }
+
+        return new ResultWeekResponse(
+                year,
+                month,
+                weekOfMonth,
+                getInt(drawResult, "drawNo"),
+                toLocalDate(drawResult.get("drawDate")),
+                List.of(
+                        getInt(drawResult, "no1"),
+                        getInt(drawResult, "no2"),
+                        getInt(drawResult, "no3"),
+                        getInt(drawResult, "no4"),
+                        getInt(drawResult, "no5"),
+                        getInt(drawResult, "no6")
+                ),
+                getInt(drawResult, "bonusNo"),
+                items
+        );
+    }
+
+    private String scopeKey(int year, int month, int week) {
+        return year + "-" + month + "-" + week;
     }
 
     @Override

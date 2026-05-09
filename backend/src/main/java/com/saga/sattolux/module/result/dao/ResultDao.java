@@ -12,4 +12,7 @@ public interface ResultDao {
     void upsertMatchResult(Map<String, Object> params);
     Map<String, Object> findWeekDrawResultByScope(int targetYear, int targetMonth, int targetWeekOfMonth);
     List<Map<String, Object>> findMatchedSetsByScope(Long userSeq, int targetYear, int targetMonth, int targetWeekOfMonth);
+    List<Map<String, Object>> findAllScopesForUser(Long userSeq);
+    List<Map<String, Object>> findRankSummariesForUser(Long userSeq);
+    List<Map<String, Object>> findRankedSetsByScope(Long userSeq, int targetYear, int targetMonth, int targetWeekOfMonth);
 }

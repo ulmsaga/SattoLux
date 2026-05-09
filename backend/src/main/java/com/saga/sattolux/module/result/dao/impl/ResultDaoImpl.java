@@ -71,4 +71,24 @@ public class ResultDaoImpl implements ResultDao {
                 "targetWeekOfMonth", targetWeekOfMonth
         ));
     }
+
+    @Override
+    public List<Map<String, Object>> findAllScopesForUser(Long userSeq) {
+        return sql.selectList(NS + "findAllScopesForUser", userSeq);
+    }
+
+    @Override
+    public List<Map<String, Object>> findRankSummariesForUser(Long userSeq) {
+        return sql.selectList(NS + "findRankSummariesForUser", userSeq);
+    }
+
+    @Override
+    public List<Map<String, Object>> findRankedSetsByScope(Long userSeq, int targetYear, int targetMonth, int targetWeekOfMonth) {
+        return sql.selectList(NS + "findRankedSetsByScope", Map.of(
+                "userSeq", userSeq,
+                "targetYear", targetYear,
+                "targetMonth", targetMonth,
+                "targetWeekOfMonth", targetWeekOfMonth
+        ));
+    }
 }
